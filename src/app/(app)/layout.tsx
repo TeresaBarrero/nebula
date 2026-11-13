@@ -1,4 +1,5 @@
 import { Carcasa } from '@/components/app/Carcasa';
+import { ProveedorDatos } from '@/components/app/Datos';
 import { ProveedorNebula } from '@/components/app/Nebula';
 import { ProveedorToasts } from '@/components/ui/Toasts';
 
@@ -20,7 +21,9 @@ export default function LayoutApp({ children }: LayoutProps<'/'>) {
   return (
     <ProveedorToasts>
       <ProveedorNebula cargando={<Cargando />}>
-        <Carcasa>{children}</Carcasa>
+        <ProveedorDatos cargando={<Cargando />}>
+          <Carcasa>{children}</Carcasa>
+        </ProveedorDatos>
       </ProveedorNebula>
     </ProveedorToasts>
   );

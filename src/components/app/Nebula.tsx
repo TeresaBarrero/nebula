@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { borrarDemo, crearAlmacenDemo, marcarAsistenteDemo } from '@/lib/datos/almacen-demo';
+import { borrarArchivoDemo, guardarArchivoDemo, leerArchivoDemo, vaciarArchivosDemo } from '@/lib/datos/archivos-demo';
 import { CuentaNoActiva, SinSesion, crearAlmacenNube } from '@/lib/datos/almacen-nube';
 import type { Ajustes, Almacen, Cargado, DatosAsistente, Modo, Perfil, Tema } from '@/lib/datos/tipos';
 import { irpfDelPerfil } from '@/lib/reglas/irpf';
@@ -14,6 +15,7 @@ import { useToast } from '@/components/ui/Toasts';
 
 type Api = Cargado & {
   modo: Modo;
+  almacen: Almacen;
   guardarPerfil: (c: Partial<Omit<Perfil, 'email'>>) => Promise<boolean>;
   guardarAjustes: (c: Partial<Ajustes>) => Promise<boolean>;
   cambiarTema: (t: Tema) => void;
@@ -44,7 +46,7 @@ export function ProveedorNebula({ children, cargando }: { children: ReactNode; c
 
   useEffect(() => {
     let a: Almacen;
-    if (enDemo()) a = crearAlmacenDemo(localStorage);
+    if (enDemo()) a = crearAlmacenDemo(localStorage, { guardar: guardarArchivoDemo, leer: leerArchivoDemo, borrar: borrarArchivoDemo });
     else if (supabaseConfigurado) a = crearAlmacenNube(supabaseNavegador());
     else {
       router.replace('/entrar');
@@ -100,6 +102,7 @@ export function ProveedorNebula({ children, cargando }: { children: ReactNode; c
     return {
       ...datos,
       modo: almacen.modo,
+      almacen,
       guardarPerfil,
       guardarAjustes,
       cambiarTema: (theme) => {
@@ -132,6 +135,7 @@ export function ProveedorNebula({ children, cargando }: { children: ReactNode; c
       },
       reiniciarDemo: async () => {
         borrarDemo(localStorage);
+        await vaciarArchivosDemo().catch(() => {});
         setEstado({ fase: 'cargando' });
         setVersion((v) => v + 1);
       },

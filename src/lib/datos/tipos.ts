@@ -1,5 +1,7 @@
 import type { Disciplina } from '@/lib/catalogos/disciplinas';
 import type { FormaJuridica, ModoIrpf } from '@/lib/reglas/irpf';
+import type { EfectoBorrado } from '@/lib/reglas/vinculos';
+import type { Colecciones, FilaDe, Id, NombreColeccion } from './entidades';
 
 export type Tema = 'system' | 'light' | 'dark';
 
@@ -71,6 +73,22 @@ export interface Almacen {
   cargar(): Promise<Cargado>;
   guardarPerfil(cambios: Partial<Omit<Perfil, 'email'>>): Promise<void>;
   guardarAjustes(cambios: Partial<Ajustes>): Promise<void>;
+
+  /** Todos los datos del espacio (contactos, empresas, proyectos…). */
+  cargarColecciones(): Promise<Colecciones>;
+  crear<K extends NombreColeccion>(col: K, fila: FilaDe<K>): Promise<void>;
+  actualizar<K extends NombreColeccion>(col: K, id: Id, cambios: Partial<FilaDe<K>>): Promise<void>;
+  /** Borra una fila; los vínculos y cascadas los resuelve igual que la base de datos (reglas/vinculos.ts). */
+  borrar(col: NombreColeccion, id: Id): Promise<void>;
+  /** Vuelve a poner lo borrado (para «Deshacer»). */
+  restaurar(ef: EfectoBorrado): Promise<void>;
+  marcarLeidos(claves: string[]): Promise<void>;
+
+  /** Guarda el archivo y devuelve dónde quedó (storagePath). */
+  subirArchivo(id: Id, archivo: File): Promise<string>;
+  /** Enlace temporal para abrir o descargar el archivo. */
+  urlArchivo(storagePath: string): Promise<string | null>;
+  borrarArchivo(storagePath: string): Promise<void>;
 }
 
 export const PREFS_POR_DEFECTO: Preferencias = { theme: 'system', compact: false };

@@ -2,6 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/tipos-bd';
 import { esDisciplina } from '@/lib/catalogos/disciplinas';
 import { limpiarDatosAsistente } from './asistente';
+import { NOMBRES_COLECCION, coleccionesVacias, type Proyecto } from './entidades';
+import { TABLA, aFila, deFila } from './mapeo';
 import {
   AJUSTES_POR_DEFECTO,
   PREFS_POR_DEFECTO,
@@ -44,9 +46,9 @@ export function ajustesDesdeFila(f: FilaAjustes): Ajustes {
     nif: f.nif,
     address: f.address,
     iban: f.iban,
-    kind: f.kind,
+    kind: f.kind === 'sociedad' ? 'sociedad' : 'autonomo',
     newAutonomo: f.new_autonomo,
-    irpfMode: f.irpf_mode,
+    irpfMode: f.irpf_mode === 'particulares' || f.irpf_mode === 'mixto' ? f.irpf_mode : 'empresas',
     iva: Number(f.iva),
     irpf: Number(f.irpf),
     payDays: Number(f.pay_days),
@@ -85,6 +87,8 @@ export function filaDesdeAjustes(a: Partial<Ajustes>): CambiosAjustes {
 export function crearAlmacenNube(sb: SupabaseClient<Database>): Almacen {
   let usuarioId = '';
   let espacioId = '';
+  // Para las tablas de datos (nombres dinámicos) se usa el cliente sin tipos; las columnas las traduce mapeo.ts.
+  const db = sb as unknown as SupabaseClient;
 
   return {
     modo: 'nube',
@@ -95,7 +99,7 @@ export function crearAlmacenNube(sb: SupabaseClient<Database>): Almacen {
 
       const { data: perfil, error: e1 } = await sb.from('profiles').select('*').eq('id', usuarioId).single();
       if (e1 || !perfil) throw e1 ?? new Error('No se encuentra tu perfil.');
-      if (perfil.status !== 'aprobado') throw new CuentaNoActiva(perfil.status);
+      if (perfil.status !== 'aprobado') throw new CuentaNoActiva(perfil.status === 'rechazado' ? 'rechazado' : 'pendiente');
 
       const { data: miembro } = await sb
         .from('workspace_members')
@@ -134,5 +138,85 @@ export function crearAlmacenNube(sb: SupabaseClient<Database>): Almacen {
       const { error } = await sb.from('workspace_settings').update(filaDesdeAjustes(c)).eq('workspace_id', espacioId);
       if (error) throw error;
     },
+
+    async cargarColecciones() {
+      const c = coleccionesVacias();
+      const pedir = async (tabla: string) => {
+        const { data, error } = await db.from(tabla).select('*');
+        if (error) throw error;
+        return (data ?? []) as Record<string, unknown>[];
+      };
+      const [equipo, leidos, ...tablas] = await Promise.all([
+        pedir('project_collaborators'),
+        pedir('notification_reads'),
+        ...NOMBRES_COLECCION.map((n) => pedir(TABLA[n])),
+      ]);
+      NOMBRES_COLECCION.forEach((n, i) => {
+        (c[n] as unknown[]) = tablas[i].map(deFila);
+      });
+      c.projects = c.projects.map((p) => ({
+        ...p,
+        collaborators: equipo.filter((e) => e.project_id === p.id).map((e) => String(e.contact_id)),
+      }));
+      c.notificationReads = leidos.map((l) => String(l.key));
+      return c;
+    },
+    async crear(col, fila) {
+      const { error } = await db.from(TABLA[col]).insert({ ...aFila(fila as Record<string, unknown>), workspace_id: espacioId });
+      if (error) throw error;
+      if (col === 'projects') await ponerEquipo(fila.id, (fila as Proyecto).collaborators);
+    },
+    async actualizar(col, id, cambios) {
+      const fila = aFila(cambios as Record<string, unknown>);
+      if (Object.keys(fila).length) {
+        const { error } = await db.from(TABLA[col]).update(fila).eq('id', id);
+        if (error) throw error;
+      }
+      if (col === 'projects' && 'collaborators' in cambios) await ponerEquipo(id, (cambios as Partial<Proyecto>).collaborators ?? []);
+    },
+    async borrar(col, id) {
+      // La base de datos desvincula y borra en cascada igual que reglas/vinculos.ts.
+      const { error } = await db.from(TABLA[col]).delete().eq('id', id);
+      if (error) throw error;
+    },
+    async restaurar(ef) {
+      for (const { col, fila } of ef.borradas) await this.crear(col, fila as never);
+      for (const d of ef.desvinculadas) await this.actualizar(d.col, d.id, { [d.campo]: d.antes } as never);
+    },
+    async marcarLeidos(claves) {
+      if (!claves.length) return;
+      const { error } = await db
+        .from('notification_reads')
+        .upsert(claves.map((key) => ({ key, workspace_id: espacioId })), { onConflict: 'workspace_id,key', ignoreDuplicates: true });
+      if (error) throw error;
+    },
+    async subirArchivo(id, archivo) {
+      const nombre = archivo.name.normalize('NFD').replace(/[^\w.\-]+/g, '_').slice(-120);
+      const ruta = `${espacioId}/${id}/${nombre}`;
+      const { error } = await sb.storage.from(BUCKET).upload(ruta, archivo, { contentType: archivo.type || undefined, upsert: false });
+      if (error) throw error;
+      return ruta;
+    },
+    async urlArchivo(ruta) {
+      if (!ruta) return null;
+      const { data } = await sb.storage.from(BUCKET).createSignedUrl(ruta, 120);
+      return data?.signedUrl ?? null;
+    },
+    async borrarArchivo(ruta) {
+      if (ruta) await sb.storage.from(BUCKET).remove([ruta]);
+    },
   };
+
+  /** Sustituye el equipo (colaboradores) de un proyecto. */
+  async function ponerEquipo(proyecto: string, ids: string[]) {
+    const { error: e1 } = await db.from('project_collaborators').delete().eq('project_id', proyecto);
+    if (e1) throw e1;
+    if (!ids.length) return;
+    const { error: e2 } = await db
+      .from('project_collaborators')
+      .insert(ids.map((contact_id) => ({ project_id: proyecto, contact_id, workspace_id: espacioId })));
+    if (e2) throw e2;
+  }
 }
+
+const BUCKET = 'documentos';
