@@ -23,7 +23,7 @@ export default function Pendiente() {
       if (!u.user) return router.replace('/entrar');
       const { data } = await sb.from('profiles').select('status, privacy_accepted_at, email').eq('id', u.user.id).single();
       if (data?.status === 'aprobado') return router.replace('/inicio');
-      setEstado({ status: data?.status ?? 'pendiente', privacidad: Boolean(data?.privacy_accepted_at), email: data?.email ?? u.user.email ?? '' });
+      setEstado({ status: data?.status === 'rechazado' ? 'rechazado' : 'pendiente', privacidad: Boolean(data?.privacy_accepted_at), email: data?.email ?? u.user.email ?? '' });
     })();
   }, [router]);
 

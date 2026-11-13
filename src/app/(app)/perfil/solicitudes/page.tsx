@@ -9,7 +9,9 @@ import { Cabecera } from '@/components/ui/Cabecera';
 import { Icono } from '@/components/ui/Icono';
 import { useToast } from '@/components/ui/Toasts';
 
-type Cuenta = Database['public']['Functions']['admin_list_accounts']['Returns'][number];
+type Cuenta = Omit<Database['public']['Functions']['admin_list_accounts']['Returns'][number], 'status'> & {
+  status: 'pendiente' | 'aprobado' | 'rechazado';
+};
 
 const ESTADO = {
   pendiente: { label: 'Pendiente', cls: 'butter' },
@@ -34,7 +36,7 @@ export default function Solicitudes() {
       .rpc('admin_list_accounts')
       .then(({ data, error }) => {
         if (error) toast('No se han podido cargar las solicitudes');
-        setCuentas(data ?? []);
+        setCuentas((data ?? []) as Cuenta[]);
       });
   }, [esAdmin, toast, version]);
   const cargar = () => setVersion((v) => v + 1);

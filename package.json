@@ -11,9 +11,8 @@
     "test": "vitest run",
     "test:rls": "node --env-file=.env.local node_modules/vitest/vitest.mjs run --config vitest.rls.config.mts",
     "comprobar": "npm run lint && npm run tipos && npm run test",
-    "db:enlazar": "supabase link",
-    "db:subir": "supabase db push",
-    "db:tipos": "supabase gen types typescript --linked --schema public > src/lib/supabase/tipos-bd.generado.ts",
+    "db:subir": "node scripts/db.mjs push",
+    "db:tipos": "node scripts/db.mjs tipos",
     "hacer-admin": "node --env-file=.env.local scripts/hacer-admin.mjs",
     "iconos": "node scripts/generar-iconos.mjs"
   },
