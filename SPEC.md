@@ -569,7 +569,8 @@ y **Probar la demostración** (sin registro).
 
 ### 14.2 Modo demostración
 - La app es la misma, pero los datos se guardan **solo en el navegador** (`localStorage`, clave `nebula-demo`) y nunca tocan Supabase.
-- Empieza con los **datos de ejemplo del prototipo** (`seed()`); cada fase añade a la demo los datos de sus pantallas.
+- Empieza con los **datos de ejemplo del prototipo** (`seed()` y `ext()`). **Regla para cada fase:** toda pantalla nueva debe verse en la demo
+  ya rellena con sus datos ficticios y permitir crear, editar y borrar más, igual que con una cuenta real.
 - Barra superior: aviso «Modo demostración» con ayuda «?» y botón **«Crear usuario»** → `/registro?desde=demo`.
 - Perfil: «Empezar de cero la demo» y «Salir de la demostración».
 - Lo que necesita servidor (correos, portal del cliente, cobros, firma, Gmail/Calendar) se **simula** en la demo, como en el prototipo.
