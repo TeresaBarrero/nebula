@@ -35,5 +35,10 @@ if (e1) throw e1;
 const { error: e2 } = await sb.rpc('admin_set_status', { target: usuario.id, new_status: 'aprobado' });
 if (e2) throw e2;
 
+if (!usuario.email_confirmed_at) {
+  // El correo de Supabase gratuito es muy limitado: la cuenta de administración se confirma directamente.
+  const { error: e3 } = await sb.auth.admin.updateUserById(usuario.id, { email_confirm: true });
+  if (e3) throw e3;
+  console.log('✓ Email confirmado.');
+}
 console.log(`✓ ${email} ya es administradora y su cuenta está aprobada.`);
-if (!usuario.email_confirmed_at) console.log('  Ojo: todavía no ha confirmado su email. Busca el mensaje de confirmación en tu correo.');
