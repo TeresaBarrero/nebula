@@ -1,0 +1,70 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
+import type { NombreIcono } from '@/lib/catalogos/iconos';
+import { Icono } from '@/components/ui/Icono';
+import { useToast } from '@/components/ui/Toasts';
+
+// Mismo orden y colores que el menú «+» del prototipo, con la fase en que cada cosa se podrá crear.
+const OPCIONES: [string, NombreIcono, string, number][] = [
+  ['Nota', 'note', 'butter', 1],
+  ['Gasto', 'wallet', 'peach', 2],
+  ['Factura', 'receipt', 'sand', 2],
+  ['Proyecto', 'folder', 'butter', 1],
+  ['Oportunidad', 'funnel', 'lilac', 1],
+  ['Contacto', 'users', 'sage', 1],
+  ['Apuntar horas', 'timer', 'sage', 3],
+  ['Publicación', 'megaphone', 'rose', 3],
+  ['Reunión', 'calendar', 'lilac', 1],
+  ['Tarea', 'check', 'peach', 1],
+];
+
+/** Botón flotante «+» para crear cualquier cosa (SPEC §3). */
+export function BotonCrear({ abierto, setAbierto }: { abierto: boolean; setAbierto: (v: boolean) => void }) {
+  const toast = useToast();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!abierto) return;
+    const fuera = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setAbierto(false);
+    };
+    document.addEventListener('mousedown', fuera);
+    return () => document.removeEventListener('mousedown', fuera);
+  }, [abierto, setAbierto]);
+
+  return (
+    <div className={`fab ${abierto ? 'open' : ''}`} ref={ref}>
+      {abierto && (
+        <div className="fab-menu" role="menu">
+          {OPCIONES.map(([label, icono, color, fase], i) => (
+            <button
+              key={label}
+              type="button"
+              role="menuitem"
+              style={{ animationDelay: `${(OPCIONES.length - 1 - i) * 18}ms` }}
+              onClick={() => {
+                setAbierto(false);
+                toast(`Crear ${label.toLowerCase()} llega en la Fase ${fase}`);
+              }}
+            >
+              <span className={`ic ${color}`}>
+                <Icono n={icono} />
+              </span>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+      <button
+        type="button"
+        className="fab-btn"
+        onClick={() => setAbierto(!abierto)}
+        aria-label={abierto ? 'Cerrar el menú de crear' : 'Crear'}
+        aria-expanded={abierto}
+      >
+        <Icono n="plus" />
+      </button>
+    </div>
+  );
+}
