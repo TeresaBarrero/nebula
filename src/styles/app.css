@@ -1,0 +1,87 @@
+/* Estilos de nebúla que no estaban en el prototipo (acceso, demo, pantallas de espera).
+   Solo usan los tokens de tokens.css. */
+
+/* Tailwind pone los SVG como bloque; los iconos del prototipo son en línea. */
+svg.i { display: inline-block; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* Carga y errores */
+.pantalla-centro { min-height: 100%; display: grid; place-items: center; padding: 24px 16px; background: var(--bg); }
+.cargando-logo { font-size: 48px; animation: latido 1.4s ease-in-out infinite; }
+@keyframes latido { 50% { opacity: .45; } }
+
+/* El buscador ocupa su sitio antes que el hueco libre (si no, se corta el texto). */
+.top .search-trigger { flex: 1 1 360px; }
+.top .spacer { flex: 0 1 auto; }
+.chip.ajusta { white-space: normal; flex-wrap: wrap; }
+
+/* Aviso de demostración en la barra superior */
+.demo-bar { display: flex; align-items: center; gap: 8px; flex: none; }
+.demo-pill { padding: 5px 10px; }
+.demo-pill .help { background: var(--surface); }
+.demo-pill .help .tip { left: auto; right: -40px; transform: none; bottom: auto; top: calc(100% + 8px); }
+.demo-bar .btn { text-decoration: none; }
+.top a.btn { color: #fff; }
+
+/* Secciones que aún no están */
+.proximamente { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 44px 24px; }
+.proximamente h2 { font-size: 20px; font-weight: 500; }
+.proximamente p { max-width: 520px; margin: 0; }
+.tl-ic.grande { width: 52px; height: 52px; border-radius: 16px; }
+.tl-ic.grande svg { width: 24px; height: 24px; }
+.enlace-fila { text-decoration: none; color: inherit; border-radius: 10px; }
+.enlace-fila:hover { background: var(--surface-2); }
+
+/* Asistente y formularios */
+.wz-2 { grid-template-columns: 1fr 1fr; }
+.modal-b.sin-relleno { padding: 14px 0 0; overflow: visible; }
+.more > summary { list-style: none; align-self: flex-start; cursor: pointer; }
+.field small { font-size: 12px; }
+.error { color: var(--danger); font-size: 12.5px; font-weight: 600; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn.ancho { width: 100%; justify-content: center; padding-block: 11px; }
+.centrado { text-align: center; align-self: center; }
+button.text-link { background: none; border: 0; padding: 0; }
+.trampa { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+
+/* Pantallas de acceso */
+.acceso { min-height: 100%; display: flex; justify-content: center; padding: 6vh 16px 32px; background: var(--bg); }
+.acceso-caja { width: 100%; display: flex; flex-direction: column; gap: 16px; }
+.acceso-logo { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-bottom: 6px; text-align: center; }
+.acceso-logo .logo { font-size: 54px; }
+.acceso-tarjeta { display: flex; flex-direction: column; gap: 14px; padding: 26px; }
+.acceso-tarjeta h1 { font-size: 26px; }
+.acceso-tarjeta p { margin: 0; }
+.acceso-tarjeta ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.acceso-form { display: flex; flex-direction: column; gap: 12px; }
+.acceso-demo { display: flex; align-items: center; gap: 14px; text-align: left; width: 100%; background: var(--butter); color: var(--butter-ink); border: 0; transition: transform .15s; }
+.acceso-demo:hover { transform: translateY(-2px); }
+.acceso-demo b { display: block; color: var(--fg); }
+.acceso-demo .muted { display: block; font-size: 12.5px; color: var(--butter-ink); }
+.acceso-demo .tl-ic { background: var(--surface); }
+.separador { display: flex; align-items: center; gap: 12px; color: var(--faint); font-size: 12px; }
+.separador::before, .separador::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.btn-google { width: 100%; justify-content: center; padding-block: 11px; }
+
+/* Solicitudes de acceso */
+.solicitud { flex-wrap: wrap; }
+
+@media (max-width: 860px) {
+  .demo-txt { display: none; }
+  .demo-pill .help { margin-left: 0; }
+}
+@media (max-width: 520px) {
+  .wz-2 { grid-template-columns: 1fr; }
+  .search-trigger span { display: none; }
+  .search-trigger { flex: 0 0 auto; }
+  .demo-bar .btn { padding: 6px 10px; }
+  .acceso-tarjeta { padding: 20px; }
+}
+
+/* El menú lateral se desplaza si no cabe en pantallas bajas (el logo y tu avatar siempre a la vista). */
+.side .nav { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none; margin-inline: -4px; padding-inline: 4px; }
+.side .nav::-webkit-scrollbar { display: none; }

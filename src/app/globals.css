@@ -1,0 +1,40 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+@import "../styles/prototipo.css" layer(components);
+@import "../styles/app.css" layer(components);
+
+/* Tailwind solo conoce los colores de nebúla: ningún color fuera de la paleta. */
+@theme inline {
+  --color-*: initial;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-sage: var(--sage);
+  --color-sage-strong: var(--sage-strong);
+  --color-sage-ink: var(--sage-ink);
+  --color-peach: var(--peach);
+  --color-peach-ink: var(--peach-ink);
+  --color-peach-strong: var(--peach-strong);
+  --color-butter: var(--butter);
+  --color-butter-ink: var(--butter-ink);
+  --color-sand: var(--sand);
+  --color-sand-ink: var(--sand-ink);
+  --color-lilac: var(--lilac);
+  --color-lilac-ink: var(--lilac-ink);
+  --color-mist: var(--mist);
+  --color-mist-ink: var(--mist-ink);
+  --color-rose: var(--rose);
+  --color-rose-ink: var(--rose-ink);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --color-white: #fff;
+  --color-transparent: transparent;
+  --font-logo: var(--f-logo);
+  --font-head: var(--f-head);
+  --font-body: var(--f-body);
+  --radius-card: var(--r);
+}

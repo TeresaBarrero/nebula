@@ -1,0 +1,57 @@
+/* Tokens de diseño de nebúla — SPEC §8.1 y §8.2, exactamente.
+   --overlay, --shadow y --r vienen del prototipo.
+   Tema: sin data-theme sigue al sistema; data-theme="light" | "dark" lo fija. */
+
+:root {
+  --bg: #f3f5f1; --surface: #ffffff; --surface-2: #f8f9f6; --line: #e2e7df;
+  --fg: #283029; --muted: #667068; --faint: #98a199;
+  --sage: #d3dfcd;   --sage-strong: #5b7a57; --sage-ink: #2f4a2d;
+  --peach: #fbdccd;  --peach-ink: #8a4630;   --peach-strong: #ec9473;
+  --butter: #fcefc3; --butter-ink: #76590f;
+  --sand: #f1e4d0;   --sand-ink: #6b5230;
+  --lilac: #dfdbf0;  --lilac-ink: #4a4380;
+  --mist: #e8eae7;   --mist-ink: #545b55;
+  --rose: #f8d3cf;   --rose-ink: #9a3527;
+  --danger: #c24e3c; --ok: #4c8754;
+  --overlay: rgba(30, 38, 32, 0.38);
+  --shadow: 0 1px 2px rgba(40, 52, 40, 0.05), 0 10px 30px rgba(40, 52, 40, 0.07);
+  --f-logo: var(--font-caveat), "Segoe Script", cursive;
+  --f-head: var(--font-outfit), "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: var(--font-manrope), "Segoe UI", system-ui, sans-serif;
+  --r: 16px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151916; --surface: #1d231f; --surface-2: #222924; --line: #2e3731;
+    --fg: #e6ebe5; --muted: #a2aca3; --faint: #6f7a71;
+    --sage: #2a382a;   --sage-strong: #9cc196; --sage-ink: #d2e6cc;
+    --peach: #42302a;  --peach-ink: #f3c3ad;   --peach-strong: #e8977a;
+    --butter: #3b3420; --butter-ink: #ecd890;
+    --sand: #383026;   --sand-ink: #e6d0af;
+    --lilac: #2e2b44;  --lilac-ink: #cbc4f1;
+    --mist: #29302b;   --mist-ink: #c4cbc5;
+    --rose: #452825;   --rose-ink: #f3b0a5;
+    --danger: #ea8571; --ok: #8cc792;
+    --overlay: rgba(0, 0, 0, 0.55);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.3);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #151916; --surface: #1d231f; --surface-2: #222924; --line: #2e3731;
+  --fg: #e6ebe5; --muted: #a2aca3; --faint: #6f7a71;
+  --sage: #2a382a;   --sage-strong: #9cc196; --sage-ink: #d2e6cc;
+  --peach: #42302a;  --peach-ink: #f3c3ad;   --peach-strong: #e8977a;
+  --butter: #3b3420; --butter-ink: #ecd890;
+  --sand: #383026;   --sand-ink: #e6d0af;
+  --lilac: #2e2b44;  --lilac-ink: #cbc4f1;
+  --mist: #29302b;   --mist-ink: #c4cbc5;
+  --rose: #452825;   --rose-ink: #f3b0a5;
+  --danger: #ea8571; --ok: #8cc792;
+  --overlay: rgba(0, 0, 0, 0.55);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.3);
+  color-scheme: dark;
+}
