@@ -2,7 +2,6 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
-import { useToast } from '@/components/ui/Toasts';
 import { Asistente } from './Asistente';
 import { Avisos } from './Avisos';
 import { BarraLateral } from './BarraLateral';
@@ -10,6 +9,7 @@ import { BarraSuperior } from './BarraSuperior';
 import { BotonCrear } from './BotonCrear';
 import { useNebula } from './Nebula';
 import { Paleta } from './Paleta';
+import { ProveedorFormularios, useFormularios } from './formularios/Formulario';
 
 const Ctx = createContext<{ abrirAsistente: () => void }>({ abrirAsistente: () => {} });
 export const useCarcasa = () => useContext(Ctx);
@@ -19,8 +19,16 @@ const escribiendo = (t: EventTarget | null) =>
 
 /** Layout de la app: barra lateral, barra superior, «+», buscador, avisos, asistente y atajos. */
 export function Carcasa({ children }: { children: ReactNode }) {
+  return (
+    <ProveedorFormularios>
+      <CarcasaInterior>{children}</CarcasaInterior>
+    </ProveedorFormularios>
+  );
+}
+
+function CarcasaInterior({ children }: { children: ReactNode }) {
   const { ajustes } = useNebula();
-  const toast = useToast();
+  const abrirFormulario = useFormularios();
   const ruta = usePathname();
   const [menu, setMenu] = useState(false);
   const [paleta, setPaleta] = useState(false);
@@ -50,8 +58,9 @@ export function Carcasa({ children }: { children: ReactNode }) {
       if (e.key === '/') {
         e.preventDefault();
         setPaleta(true);
-      } else if (e.key.toLowerCase() === 'n' && !paleta) {
-        toast('Crear tareas llega en la Fase 1');
+      } else if (e.key.toLowerCase() === 'n' && !paleta && !document.querySelector('.modal')) {
+        e.preventDefault();
+        abrirFormulario('task');
       } else if (e.key === 'Escape') {
         setFab(false);
         setMenu(false);
@@ -59,7 +68,7 @@ export function Carcasa({ children }: { children: ReactNode }) {
     };
     document.addEventListener('keydown', tecla);
     return () => document.removeEventListener('keydown', tecla);
-  }, [asistente, paleta, toast]);
+  }, [asistente, paleta, abrirFormulario]);
 
   return (
     <Ctx value={{ abrirAsistente: () => setAsistente(true) }}>

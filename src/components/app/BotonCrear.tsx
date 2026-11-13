@@ -4,24 +4,27 @@ import { useEffect, useRef } from 'react';
 import type { NombreIcono } from '@/lib/catalogos/iconos';
 import { Icono } from '@/components/ui/Icono';
 import { useToast } from '@/components/ui/Toasts';
+import { useFormularios } from './formularios/Formulario';
+import type { TipoForm } from './formularios/definiciones';
 
 // Mismo orden y colores que el menú «+» del prototipo, con la fase en que cada cosa se podrá crear.
-const OPCIONES: [string, NombreIcono, string, number][] = [
-  ['Nota', 'note', 'butter', 1],
+const OPCIONES: [string, NombreIcono, string, number, TipoForm?][] = [
+  ['Nota', 'note', 'butter', 1, 'note'],
   ['Gasto', 'wallet', 'peach', 2],
   ['Factura', 'receipt', 'sand', 2],
   ['Proyecto', 'folder', 'butter', 1],
-  ['Oportunidad', 'funnel', 'lilac', 1],
-  ['Contacto', 'users', 'sage', 1],
+  ['Oportunidad', 'funnel', 'lilac', 1, 'deal'],
+  ['Contacto', 'users', 'sage', 1, 'contact'],
   ['Apuntar horas', 'timer', 'sage', 3],
   ['Publicación', 'megaphone', 'rose', 3],
-  ['Reunión', 'calendar', 'lilac', 1],
-  ['Tarea', 'check', 'peach', 1],
+  ['Reunión', 'calendar', 'lilac', 1, 'event'],
+  ['Tarea', 'check', 'peach', 1, 'task'],
 ];
 
 /** Botón flotante «+» para crear cualquier cosa (SPEC §3). */
 export function BotonCrear({ abierto, setAbierto }: { abierto: boolean; setAbierto: (v: boolean) => void }) {
   const toast = useToast();
+  const abrir = useFormularios();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,7 +40,7 @@ export function BotonCrear({ abierto, setAbierto }: { abierto: boolean; setAbier
     <div className={`fab ${abierto ? 'open' : ''}`} ref={ref}>
       {abierto && (
         <div className="fab-menu" role="menu">
-          {OPCIONES.map(([label, icono, color, fase], i) => (
+          {OPCIONES.map(([label, icono, color, fase, tipo], i) => (
             <button
               key={label}
               type="button"
@@ -45,7 +48,8 @@ export function BotonCrear({ abierto, setAbierto }: { abierto: boolean; setAbier
               style={{ animationDelay: `${(OPCIONES.length - 1 - i) * 18}ms` }}
               onClick={() => {
                 setAbierto(false);
-                toast(`Crear ${label.toLowerCase()} llega en la Fase ${fase}`);
+                if (tipo) abrir(tipo);
+                else toast(`Crear ${label.toLowerCase()} llega en la Fase ${fase}`);
               }}
             >
               <span className={`ic ${color}`}>
