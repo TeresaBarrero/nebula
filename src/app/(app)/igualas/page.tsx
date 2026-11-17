@@ -13,6 +13,8 @@ import { Pill, PillDisciplina } from '@/components/crm/comunes';
 import { useDinero } from '@/components/dinero/Dinero';
 import { horas, horasDeMas, minutosIguala } from '@/lib/reglas/trabajo';
 import { useTrabajo } from '@/components/trabajo/Trabajo';
+import { useCliente } from '@/components/cliente/Cliente';
+import { mesAnterior } from '@/lib/reglas/cliente';
 import { Ayuda } from '@/components/ui/Ayuda';
 import { Cabecera } from '@/components/ui/Cabecera';
 import { Icono } from '@/components/ui/Icono';
@@ -202,6 +204,7 @@ function TarjetaIguala({ r }: { r: Iguala }) {
   const mes = nombreMes(hoy);
   const toca = igualaPorFacturar(r, hoy);
   const trabajo = useTrabajo();
+  const cliente = useCliente();
   const min = minutosIguala(c, r, hoy);
   const pct = r.hours ? (min / 60 / r.hours) * 100 : 0;
   const deMas = horasDeMas(c, r, hoy);
@@ -259,6 +262,11 @@ function TarjetaIguala({ r }: { r: Iguala }) {
             Cobrar {horas(deMas * 60)} de más
           </button>
         )}
+        <button type="button" className="btn sm" onClick={() => cliente.verInforme(r.id, mesAnterior(hoy))}>
+          <Icono n="chart" />
+          Informe de {nombreMes(`${mesAnterior(hoy)}-01`)}
+          {c.reports.some((x) => x.retainerId === r.id && x.month === mesAnterior(hoy) && x.status === 'enviado') ? ' ✓' : ''}
+        </button>
         <button type="button" className="btn sm ghost" onClick={() => abrir('retainer', { id: r.id })}>
           <Icono n="edit" />
           Editar

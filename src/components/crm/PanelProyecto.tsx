@@ -7,6 +7,8 @@ import { ESTADOS_BRIEF, preguntasBrief } from '@/lib/catalogos/trabajo';
 import { briefDe, duracion, historiaEntregable, horas, horasProyecto, portfolioDe, rondasDe, versionesDe } from '@/lib/reglas/trabajo';
 import { useNebula } from '@/components/app/Nebula';
 import { useTrabajo } from '@/components/trabajo/Trabajo';
+import { CajaContrato } from '@/components/cliente/CajaContrato';
+import { useCliente } from '@/components/cliente/Cliente';
 import { PLANTILLAS } from '@/lib/catalogos/plantillas';
 import type { Entregable, Proyecto } from '@/lib/datos/entidades';
 import { eur } from '@/lib/reglas/dinero';
@@ -31,6 +33,7 @@ export function PanelProyecto({ p, alCerrar }: { p: Proyecto; alCerrar: () => vo
   const { c } = useDatos();
   const abrir = useFormularios();
   const { cambiarFase } = useAccionesCrm();
+  const cliente = useCliente();
   const contacto = c.contacts.find((x) => x.id === p.contactId);
   const oportunidad = c.deals.find((d) => d.projectId === p.id);
   const idx = FLUJO.indexOf(p.status);
@@ -60,6 +63,11 @@ export function PanelProyecto({ p, alCerrar }: { p: Proyecto; alCerrar: () => vo
             )}
           </div>
           <div style={{ display: 'flex', gap: 4 }}>
+            {contacto?.companyId && (
+              <button type="button" className="icon-btn" onClick={() => cliente.verPortal(contacto.companyId!)} aria-label="Ver el portal del cliente" title="Ver el portal del cliente">
+                <Icono n="eye" />
+              </button>
+            )}
             <button type="button" className="icon-btn" onClick={() => abrir('project', { id: p.id })} aria-label="Editar proyecto" title="Editar">
               <Icono n="edit" />
             </button>
@@ -155,6 +163,7 @@ export function PanelProyecto({ p, alCerrar }: { p: Proyecto; alCerrar: () => vo
           </dl>
 
           <SeccionBrief p={p} />
+          <CajaContrato p={p} />
           <Entregables p={p} />
           <TareasProyecto p={p} />
           <HorasProyecto p={p} />
@@ -165,7 +174,7 @@ export function PanelProyecto({ p, alCerrar }: { p: Proyecto; alCerrar: () => vo
           {p.status === 'entregado' && <SeccionPortfolio p={p} />}
           <SeccionHistorial filtro={{ projectId: p.id }} limite={10} registrar={{ contactId: p.contactId, projectId: p.id }} />
           <p className="foot-note" style={{ marginTop: 0 }}>
-            El contrato del proyecto y el portal del cliente llegan en la Fase 4.
+            Lo que ve tu cliente está en su portal (botón del ojo, arriba).
           </p>
         </div>
       </aside>

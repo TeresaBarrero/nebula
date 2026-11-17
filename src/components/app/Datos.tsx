@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { type Colecciones, type Documento, type Factura, type FilaDe, type Id, type NombreColeccion } from '@/lib/datos/entidades';
+import { type ClaveAutomatizacion, type Colecciones, type Documento, type Factura, type FilaDe, type Id, type NombreColeccion } from '@/lib/datos/entidades';
 import { hoy } from '@/lib/reglas/fechas';
 import { aplicarBorrado, cambiarFila, deshacerBorrado, efectoDeBorrar, ponerFila } from '@/lib/reglas/vinculos';
 import { useToast } from '@/components/ui/Toasts';
@@ -19,6 +19,10 @@ type ApiDatos = {
   /** Borra (con «Deshacer» en el aviso). `etiqueta` es lo que dice el aviso, p. ej. «Contacto eliminado». */
   borrar: (col: NombreColeccion, id: Id, etiqueta?: string) => Promise<void>;
   marcarLeidos: (claves: string[]) => Promise<void>;
+  /** Apunta que una automatización se ha ejecutado para `ref`. false = ya estaba (no repetir). */
+  registrarEjecucion: (key: ClaveAutomatizacion, ref: string) => Promise<boolean>;
+  /** Pone en pantalla algo que ya se guardó en el servidor (p. ej. un correo enviado). */
+  anadirLocal: <K extends NombreColeccion>(col: K, fila: FilaDe<K>) => void;
   subirDocumentos: (archivos: FileList | File[], vinculo: Pick<Documento, 'contactId' | 'companyId' | 'projectId'>) => Promise<void>;
   abrirDocumento: (d: Documento) => Promise<void>;
   /** Emite una factura (o numera un presupuesto). Devuelve el documento emitido o null si no se pudo. */
@@ -126,6 +130,18 @@ export function ProveedorDatos({ children, cargando }: { children: ReactNode; ca
           },
         });
       },
+      registrarEjecucion: async (key, ref) => {
+        if (c.automationRuns.some((r) => r.key === key && r.ref === ref)) return false;
+        const fila = { id: nuevoId(), key, ref, createdAt: ahoraISO() };
+        try {
+          await almacen.crear('automationRuns', fila);
+        } catch {
+          return false; // ya estaba registrada (o no se pudo): mejor no repetir
+        }
+        poner((x) => ponerFila(x, 'automationRuns', fila));
+        return true;
+      },
+      anadirLocal: (col, fila) => poner((x) => ponerFila(x, col, fila)),
       marcarLeidos: async (claves) => {
         const nuevas = claves.filter((k) => !c.notificationReads.includes(k));
         if (!nuevas.length) return;

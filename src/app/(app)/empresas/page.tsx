@@ -13,6 +13,8 @@ import { fechaCorta } from '@/lib/reglas/fechas';
 import { estadoRenovacion } from '@/lib/reglas/recurrentes';
 import { CajaFacturas } from '@/components/dinero/Listas';
 import { Accesos, KitDeMarca } from '@/components/crm/MarcaYAccesos';
+import { useCliente } from '@/components/cliente/Cliente';
+import { ESTADOS_CONTRATO } from '@/lib/catalogos/cliente';
 import { normalizar } from '@/lib/reglas/textos';
 import { useDatos } from '@/components/app/Datos';
 import { useFormularios } from '@/components/app/formularios/Formulario';
@@ -107,6 +109,8 @@ function FichaEmpresa({ x }: { x: Empresa }) {
   const abrir = useFormularios();
   const copiar = useCopiar();
   const dinero = dineroEmpresa(c, x.id);
+  const cliente = useCliente();
+  const contratos = c.contracts.filter((k) => k.companyId === x.id);
   const igualas = c.retainers.filter((r) => r.companyId === x.id);
   const renovaciones = c.renewals.filter((n) => n.companyId === x.id).sort((a, b) => a.renewDate.localeCompare(b.renewDate));
   const personas = c.contacts.filter((p) => p.companyId === x.id).sort((a, b) => a.name.localeCompare(b.name, 'es'));
@@ -153,6 +157,14 @@ function FichaEmpresa({ x }: { x: Empresa }) {
             <Icono n="users" />
             Persona
           </button>
+          <button type="button" className="btn sm" onClick={() => cliente.verPortal(x.id)}>
+            <Icono n="eye" />
+            Ver su portal
+          </button>
+          <button type="button" className="btn sm" onClick={() => void cliente.enviarPortal(x.id, personas[0]?.id ?? null)}>
+            <Icono n="link" />
+            Enviar enlace del portal
+          </button>
           <button type="button" className="btn sm primary" onClick={() => abrir('deal', { companyId: x.id, contactId: personas[0]?.id ?? '' })}>
             <Icono n="funnel" />
             Oportunidad
@@ -178,7 +190,7 @@ function FichaEmpresa({ x }: { x: Empresa }) {
             </div>
           )}
         </dl>
-        <p className="foot-note">El portal del cliente («Ver su portal») llega en la Fase 4.</p>
+
           <div>
             <dt>Le has facturado</dt>
             <dd className="num">{eur(dinero.facturado)} <span className="muted">sin IVA</span></dd>
@@ -284,6 +296,25 @@ function FichaEmpresa({ x }: { x: Empresa }) {
               );
             })}
             {!igualas.length && !renovaciones.length && <div className="empty">Sin igualas ni renovaciones.</div>}
+          </div>
+        </section>
+        <section className="card">
+          <div className="card-h">
+            <h2>
+              <Icono n="pen" />
+              Contratos
+            </h2>
+          </div>
+          <div className="list">
+            {contratos.map((k) => (
+              <button type="button" key={k.id} className="follow fila-boton" onClick={() => cliente.verContrato(k.id)}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <b>{k.title}</b>
+                </div>
+                <Pill cls={ESTADOS_CONTRATO[k.status].cls}>{ESTADOS_CONTRATO[k.status].label}</Pill>
+              </button>
+            ))}
+            {!contratos.length && <div className="empty">Sin contratos.</div>}
           </div>
         </section>
         <KitDeMarca e={x} />

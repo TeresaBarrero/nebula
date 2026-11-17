@@ -12,6 +12,7 @@ import { Paleta } from './Paleta';
 import { ProveedorFormularios, useFormularios } from './formularios/Formulario';
 import { ProveedorDinero } from '@/components/dinero/Dinero';
 import { ProveedorTrabajo } from '@/components/trabajo/Trabajo';
+import { ProveedorCliente } from '@/components/cliente/Cliente';
 
 const Ctx = createContext<{ abrirAsistente: () => void }>({ abrirAsistente: () => {} });
 export const useCarcasa = () => useContext(Ctx);
@@ -25,7 +26,9 @@ export function Carcasa({ children }: { children: ReactNode }) {
     <ProveedorFormularios>
       <ProveedorDinero>
         <ProveedorTrabajo>
-          <CarcasaInterior>{children}</CarcasaInterior>
+          <ProveedorCliente>
+            <CarcasaInterior>{children}</CarcasaInterior>
+          </ProveedorCliente>
         </ProveedorTrabajo>
       </ProveedorDinero>
     </ProveedorFormularios>

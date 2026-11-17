@@ -5,6 +5,9 @@ import { PLANTILLAS, esPlantilla } from '@/lib/catalogos/plantillas';
 import { CANALES, ESTADOS_PUBLICACION } from '@/lib/catalogos/trabajo';
 import { sumarDias } from '@/lib/reglas/fechas';
 import type {
+  Contrato,
+  Derechos,
+  TipoContrato,
   Acceso,
   Canal,
   EstadoPublicacion,
@@ -32,7 +35,7 @@ import type {
 } from '@/lib/datos/entidades';
 import type { TipoForm, Valores } from './definiciones';
 
-type Entidad = Empresa | Contacto | Oportunidad | Proyecto | Tarea | Reunion | Nota | Iguala | Renovacion | Gasto | HoraTrabajada | Publicacion | Acceso;
+type Entidad = Empresa | Contacto | Oportunidad | Proyecto | Tarea | Reunion | Nota | Iguala | Renovacion | Gasto | HoraTrabajada | Publicacion | Acceso | Contrato;
 
 const s = (v: Valores, k: string, max = 5000) => String(v[k] ?? '').trim().slice(0, max);
 const n = (v: Valores, k: string, def = 0, min = 0, max = 1e9) => {
@@ -97,6 +100,8 @@ export function porDefecto(tipo: TipoForm, hoy: string): Record<string, unknown>
     case 'brand':
     case 'case':
       return {};
+    case 'contract':
+      return { type: 'proyecto', deposit: 30, ip: 'cesion', portfolio: true };
   }
 }
 
@@ -264,6 +269,34 @@ export function aEntidad(tipo: TipoForm, v: Valores, base: { id: string; created
         receiptPath: antes?.receiptPath ?? '',
         receiptName: antes?.receiptName ?? '',
       } satisfies Gasto;
+    }
+    case 'contract': {
+      const antes = previo as Partial<Contrato> | null;
+      const tipo = (['proyecto', 'iguala', 'colaborador'].includes(s(v, 'type')) ? s(v, 'type') : 'proyecto') as TipoContrato;
+      const ip = (['cesion', 'licencia', 'colaborador'].includes(s(v, 'ip')) ? s(v, 'ip') : 'cesion') as Derechos;
+      return {
+        ...comun,
+        type: tipo,
+        title: s(v, 'title', 200),
+        projectId: tipo === 'proyecto' ? nulo(v, 'projectId') : null,
+        retainerId: tipo === 'iguala' ? nulo(v, 'retainerId') : null,
+        companyId: tipo === 'colaborador' ? null : nulo(v, 'companyId'),
+        contactId: nulo(v, 'contactId'),
+        deposit: tipo === 'proyecto' ? Math.round(n(v, 'deposit', 0, 0, 100)) : 0,
+        ip,
+        portfolio: tipo === 'proyecto' && b(v, 'portfolio'),
+        scope: tipo === 'colaborador' ? s(v, 'scope', 3000) : '',
+        extra: s(v, 'extra', 3000),
+        status: antes?.status ?? 'borrador',
+        sentAt: antes?.sentAt ?? null,
+        signedAt: antes?.signedAt ?? null,
+        signedBy: antes?.signedBy ?? '',
+        signedIp: antes?.signedIp ?? '',
+        signedUserAgent: antes?.signedUserAgent ?? '',
+        signedText: antes?.signedText ?? '',
+        documentHash: antes?.documentHash ?? '',
+        depositInvoiceId: antes?.depositInvoiceId ?? null,
+      } satisfies Contrato;
     }
     case 'time': {
       const antes = previo as Partial<HoraTrabajada> | null;

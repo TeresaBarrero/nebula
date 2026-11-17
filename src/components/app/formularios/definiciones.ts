@@ -17,11 +17,12 @@ import type { Colecciones, NombreColeccion } from '@/lib/datos/entidades';
 import { CATEGORIAS_GASTO, TIPOS_IVA, TIPOS_RENOVACION } from '@/lib/catalogos/dinero';
 import { PLANTILLAS } from '@/lib/catalogos/plantillas';
 import { CANALES, ESTADOS_PUBLICACION } from '@/lib/catalogos/trabajo';
+import { DERECHOS, TIPOS_CONTRATO } from '@/lib/catalogos/cliente';
 import { REPETICIONES } from '@/lib/reglas/tareas';
 
 export type TipoForm =
   | 'contact' | 'company' | 'deal' | 'project' | 'task' | 'event' | 'note' | 'retainer' | 'renewal' | 'expense'
-  | 'time' | 'post' | 'access' | 'brand' | 'case';
+  | 'time' | 'post' | 'access' | 'brand' | 'case' | 'contract';
 
 export type Valores = Record<string, string | boolean>;
 
@@ -269,6 +270,27 @@ export const DEFINICIONES: Record<TipoForm, Definicion> = {
       { tipo: 'select', k: 'contactId', label: 'Colaborador o proveedor (opcional)', de: 'contacts', filtro: (c) => c.type === 'Colaborador' || c.type === 'Proveedor' },
       { tipo: 'check', k: 'deductible', label: 'Es un gasto de mi actividad (deducible)', full: true },
       { tipo: 'archivo', k: 'receipt', label: 'Ticket o factura del proveedor', full: true },
+    ],
+  },
+  contract: {
+    col: 'contracts',
+    nuevo: 'Nuevo contrato',
+    editar: 'Editar contrato',
+    guardado: 'Contrato guardado',
+    borrado: 'Contrato eliminado',
+    ayuda: 'El texto se genera solo con los datos del proyecto o la iguala: plazos, precio, rondas de cambios y derechos. Plantilla orientativa: revísala con un profesional.',
+    campos: [
+      { tipo: 'text', k: 'title', label: 'Título', req: true, full: true, max: 200 },
+      { tipo: 'selectv', k: 'type', label: 'Tipo de contrato', opciones: op(TIPOS_CONTRATO) },
+      { tipo: 'select', k: 'companyId', label: 'Empresa cliente', de: 'companies', visible: (v) => v.type !== 'colaborador' },
+      { tipo: 'select', k: 'projectId', label: 'Proyecto', de: 'projects', visible: (v) => v.type === 'proyecto' },
+      { tipo: 'select', k: 'retainerId', label: 'Iguala', de: 'retainers', visible: (v) => v.type === 'iguala' },
+      { tipo: 'select', k: 'contactId', label: 'Quién firma', de: 'contacts', filtro: (c, v) => (v.type === 'colaborador' ? c.type === 'Colaborador' : !v.companyId || c.companyId === v.companyId) },
+      { tipo: 'number', k: 'deposit', label: 'Anticipo al firmar (%)', visible: (v) => v.type === 'proyecto' },
+      { tipo: 'selectv', k: 'ip', label: '¿De quién son los derechos?', full: true, opciones: op(DERECHOS) },
+      { tipo: 'check', k: 'portfolio', label: 'Puedo enseñarlo en mi portfolio', full: true, visible: (v) => v.type === 'proyecto' },
+      { tipo: 'textarea', k: 'scope', label: 'Objeto del encargo', full: true, max: 3000, visible: (v) => v.type === 'colaborador' },
+      { tipo: 'textarea', k: 'extra', label: 'Otras condiciones', full: true, max: 3000 },
     ],
   },
   time: {

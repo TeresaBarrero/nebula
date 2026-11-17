@@ -6,7 +6,7 @@ import { esEmitida, estadoDe, pagosDe, totalesDe } from './facturas';
 import { aFecha, diasHasta, fechaLargaDe, iso, sumarDias, sumarMeses } from './fechas';
 import { enMarcha } from './proyectos';
 import { mesDe } from './recurrentes';
-import { briefDe, rondasDe } from './trabajo';
+import { briefDe, coloresDe, marcaDe, rondasDe } from './trabajo';
 
 // ───────── Contratos (SPEC §7.6) ─────────
 
@@ -197,7 +197,7 @@ export function datosPortal(c: Colecciones, companyId: Id, a: Pick<Ajustes, 'bus
   const contratos = c.contracts.filter((k) => k.companyId === companyId && k.status !== 'borrador');
   const ctxContrato = { ...c, projects: proyectos, deliverables: c.deliverables.filter((d) => pids.has(d.projectId)) };
   return {
-    empresa: { id: empresa.id, name: empresa.name },
+    empresa: { id: empresa.id, name: empresa.name, nif: empresa.nif, address: empresa.address, color: coloresDe(marcaDe(empresa))[0] ?? '' },
     estudio: a.business || a.legalName,
     persona: personas[0] ? { id: personas[0].id, name: personas[0].name } : null,
     contratos: contratos.map((k) => ({ ...k, clausulas: clausulas(k, ctxContrato, a), texto: textoContrato(k, ctxContrato, a) })),

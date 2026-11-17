@@ -7,10 +7,12 @@ import type { Cronometro, Entregable, Iguala, Id, Proyecto } from '@/lib/datos/e
 import { eur } from '@/lib/reglas/dinero';
 import { relativa } from '@/lib/reglas/fechas';
 import { mesDe, nombreMes } from '@/lib/reglas/recurrentes';
-import { aprobarEntregable, briefDe, cobroDeRondas, destinoDe, duracion, enviarVersion, entradaDeCronometro, horas, horasDeMas, pedirCambios, rondasDe } from '@/lib/reglas/trabajo';
+import { briefDe, cobroDeRondas, destinoDe, duracion, enviarVersion, entradaDeCronometro, horas, horasDeMas, pedirCambios, rondasDe } from '@/lib/reglas/trabajo';
 import { ahoraISO, nuevoId, useDatos } from '@/components/app/Datos';
 import { useNebula } from '@/components/app/Nebula';
 import { useDinero } from '@/components/dinero/Dinero';
+import { useEjecutor } from '@/components/app/ejecutor';
+import { alAprobar } from '@/lib/automatizaciones';
 import { Ayuda } from '@/components/ui/Ayuda';
 import { Icono } from '@/components/ui/Icono';
 import { Modal } from '@/components/ui/Modal';
@@ -46,6 +48,7 @@ export function ProveedorTrabajo({ children }: { children: ReactNode }) {
   const { perfil, ajustes, guardarPerfil } = useNebula();
   const dinero = useDinero();
   const toast = useToast();
+  const ejecutor = useEjecutor();
   const [eligiendo, setEligiendo] = useState(false);
   const [brief, setBrief] = useState<Id | null>(null);
   const [cambios, setCambios] = useState<Id | null>(null);
@@ -84,7 +87,9 @@ export function ProveedorTrabajo({ children }: { children: ReactNode }) {
     },
     pedirCambios: (v) => setCambios(v.id),
     aprobar: async (v) => {
-      if (await actualizar('deliverables', v.id, aprobarEntregable(hoy))) toast(`«${v.name}» aprobado`);
+      // Automatización «approved»: si era el último, el proyecto queda entregado con su factura final en borrador.
+      const r = await alAprobar(v, ejecutor.contexto(), ejecutor.ej);
+      toast(r === 'proyecto-entregado' ? 'Todo aprobado: proyecto entregado y factura final preparada' : `«${v.name}» aprobado`);
     },
     cobrarRondas: async (v) => {
       const p = proyectoDe(v);

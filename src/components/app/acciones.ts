@@ -10,6 +10,8 @@ import { useToast } from '@/components/ui/Toasts';
 import { ahoraISO, nuevoId, useDatos } from './Datos';
 import { useNebula } from './Nebula';
 import { useFormularios } from './formularios/Formulario';
+import { useEjecutor } from './ejecutor';
+import { alGanar } from '@/lib/automatizaciones';
 
 /** Tarea nueva con los valores por defecto (importante, 2 h, para mí). */
 export function tareaNueva(o: Partial<Tarea> & Pick<Tarea, 'title'>): Tarea {
@@ -49,6 +51,7 @@ export function useAccionesCrm() {
   const toast = useToast();
   const router = useRouter();
   const abrir = useFormularios();
+  const ejecutor = useEjecutor();
 
   /** Crea las tareas y entregables de una plantilla en un proyecto que ya existe. */
   const ponerPlantilla = async (p: Proyecto, clave: string) => {
@@ -75,8 +78,10 @@ export function useAccionesCrm() {
       await crearVarios('tasks', tasks);
       await crearVarios('deliverables', deliverables);
       await actualizar('deals', d.id, r.cambios);
+      // Automatización «won»: briefing y contrato enviados al cliente.
+      const auto = await alGanar(d, project, { ...ejecutor.contexto(), c: { ...c, projects: [...c.projects, project], deliverables: [...c.deliverables, ...deliverables] } }, ejecutor.ej);
       if (!callado)
-        toast(`¡Ganada! Proyecto creado${plantilla ? ` con la plantilla «${plantilla}»` : ''}`, {
+        toast(`¡Ganada! Proyecto creado${plantilla ? ` con la plantilla «${plantilla}»` : ''}${auto ? '. Briefing y contrato enviados al cliente' : ''}`, {
           label: 'Ver proyecto',
           fn: () => router.push(`/proyectos?p=${project.id}`),
         });
