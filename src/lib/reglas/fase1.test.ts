@@ -201,7 +201,7 @@ describe('Buscador ⌘K', () => {
   it('busca sin tildes ni mayúsculas en contactos, empresas, proyectos y tareas', () => {
     const g = buscar(c, 'lucia', HOY);
     expect(g.find((x) => x.titulo === 'Contactos')?.items.map((i) => i.label)).toEqual(['Lucía Fernández']);
-    expect(buscar(c, 'ESPIGA', HOY).map((x) => x.titulo)).toEqual(['Contactos', 'Empresas', 'Proyectos', 'Oportunidades', 'Facturas', 'Gastos', 'Documentos']);
+    expect(buscar(c, 'ESPIGA', HOY).map((x) => x.titulo)).toEqual(['Contactos', 'Empresas', 'Proyectos', 'Oportunidades', 'Facturas', 'Gastos', 'Contratos', 'Documentos']);
   });
   it('cada resultado lleva a su sitio', () => {
     const g = buscar(c, 'catálogo', HOY);

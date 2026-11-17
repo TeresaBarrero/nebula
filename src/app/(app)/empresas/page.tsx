@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { FASES_ABIERTAS, FASES_OPORTUNIDAD, FASES_PROYECTO } from '@/lib/catalogos/crm';
 import { DISCIPLINAS } from '@/lib/catalogos/disciplinas';
 import type { Empresa } from '@/lib/datos/entidades';
@@ -36,7 +36,15 @@ function Empresas() {
   const { c } = useDatos();
   const abrir = useFormularios();
   const router = useRouter();
-  const seleccionada = useSearchParams().get('id');
+  const params = useSearchParams();
+  const seleccionada = params.get('id');
+  const cliente = useCliente();
+  // «?portal=1»: abre la vista previa de su portal (enlaces de la demo y del buscador).
+  const conPortal = params.get('portal') === '1';
+  useEffect(() => {
+    if (conPortal && seleccionada) cliente.verPortal(seleccionada);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conPortal, seleccionada]);
   const [q, setQ] = useState('');
   const lista = c.companies
     .filter((x) => !q || normalizar(`${x.name} ${x.sector} ${x.nif}`).includes(normalizar(q)))

@@ -10,6 +10,7 @@ import { iniciales } from '@/lib/reglas/textos';
 import { supabaseNavegador } from '@/lib/supabase/navegador';
 import { useCarcasa } from '@/components/app/Carcasa';
 import { EditarPerfil } from '@/components/app/EditarPerfil';
+import { AjustesCliente } from '@/components/cliente/AjustesCliente';
 import { useNebula } from '@/components/app/Nebula';
 import { Ayuda } from '@/components/ui/Ayuda';
 import { Cabecera } from '@/components/ui/Cabecera';
@@ -254,24 +255,14 @@ export default function PaginaPerfil() {
             )}
           </section>
 
+          <AjustesCliente />
+
           <section className="card">
             <div className="card-h">
               <h2>
                 <Icono n="link" />
                 Próximamente
               </h2>
-            </div>
-            <div className="pref">
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <span className="tl-ic mist">
-                  <Icono n="card" />
-                </span>
-                <div>
-                  <b>Cobros online</b>
-                  <span>Pago con tarjeta o Bizum desde el portal del cliente.</span>
-                </div>
-              </div>
-              <span className="pill mist">Fase 4</span>
             </div>
             <div className="pref">
               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>

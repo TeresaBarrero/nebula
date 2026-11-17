@@ -7,6 +7,7 @@ import { estadoDe, totalesDe } from './facturas';
 import { empresaDe, ultimoContacto } from './historial';
 import { igualaPorFacturar, mesDe } from './recurrentes';
 import { briefDe, minutosIguala, rondasDe } from './trabajo';
+import { etiquetaMes, mesAnterior } from './cliente';
 
 /** A dónde lleva pulsar un aviso: una página o el formulario de algo. */
 export type Destino = { ruta: string } | { formulario: 'task' | 'deal' | 'event' | 'note' | 'expense' | 'retainer' | 'renewal' | 'post' | 'time'; id: string };
@@ -92,6 +93,22 @@ export function calcularAvisos(c: Colecciones, hoy: Fecha): Aviso[] {
     if (f.kind === 'presupuesto' && f.status === 'enviado' && d(f.date) < -14)
       out.push({ clave: `pre-${f.id}`, icono: 'receipt', cls: 'sand', texto: `Escribe para saber si aceptan el presupuesto ${f.number}`, sub: `${empresa(f.companyId)} · enviado hace ${dias(-d(f.date))}`, destino: { ruta: `/facturas?tipo=presupuesto&id=${f.id}` } });
   }
+
+  // ───── Cliente ─────
+  for (const k of c.contracts) {
+    if (k.status === 'enviado' && k.sentAt && d(k.sentAt) < -3)
+      out.push({ clave: `ks-${k.id}-${k.sentAt}`, icono: 'pen', cls: 'butter', texto: `El cliente aún no ha firmado: ${k.title}`, sub: `Enviado hace ${dias(-d(k.sentAt))}`, destino: { ruta: `/contratos?id=${k.id}` } });
+    if (k.status === 'firmado' && k.signedAt && d(k.signedAt.slice(0, 10)) >= -3)
+      out.push({ clave: `kf-${k.id}`, icono: 'pen', cls: 'sage', texto: `${k.signedBy} ha firmado «${k.title}»`, sub: relativa(k.signedAt.slice(0, 10), hoy), destino: { ruta: `/contratos?id=${k.id}` } });
+  }
+  for (const p of c.projects)
+    if (p.status !== 'entregado' && p.status !== 'pausa' && !c.contracts.some((k) => k.projectId === p.id))
+      out.push({ clave: `sk-${p.id}`, icono: 'pen', cls: 'rose', texto: `Proyecto en marcha sin contrato: ${p.name}`, sub: 'Créalo desde el panel del proyecto', destino: { ruta: `/proyectos?p=${p.id}` } });
+  const anterior = mesAnterior(hoy);
+  if (Number(hoy.slice(8, 10)) >= 3)
+    for (const r of c.retainers)
+      if (r.active && r.start && r.start.slice(0, 7) <= anterior && !c.reports.some((x) => x.retainerId === r.id && x.month === anterior && x.status === 'enviado'))
+        out.push({ clave: `ri-${r.id}-${anterior}`, icono: 'chart', cls: 'lilac', texto: `Prepara el informe de ${etiquetaMes(anterior)}: ${r.name}`, sub: empresa(r.companyId), destino: { ruta: '/igualas' } });
 
   const sinPermiso = c.contacts.filter((x) => !x.consent);
   if (sinPermiso.length)

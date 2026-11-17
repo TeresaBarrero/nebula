@@ -2,6 +2,7 @@ import { CUADRANTES, ESTADOS_ENTREGABLE, FASES_OPORTUNIDAD, FASES_PROYECTO, colo
 import { DISCIPLINAS } from '@/lib/catalogos/disciplinas';
 import { ESTADOS_FACTURA, TIPOS_RENOVACION } from '@/lib/catalogos/dinero';
 import { CANALES } from '@/lib/catalogos/trabajo';
+import { ESTADOS_CONTRATO } from '@/lib/catalogos/cliente';
 import { eur } from './dinero';
 import { estadoDe, totales } from './facturas';
 import type { NombreIcono } from '@/lib/catalogos/iconos';
@@ -98,6 +99,20 @@ export function buscar(c: Colecciones, texto: string, hoy: Fecha): Grupo[] {
         .filter((g) => m(g.supplier, g.concept))
         .slice(0, 5)
         .map((g) => ({ clave: 'x' + g.id, label: `${g.supplier} · ${g.concept}`, icono: 'wallet', cls: 'peach', pista: eur(g.base), destino: { formulario: 'expense', id: g.id } })),
+    },
+    {
+      titulo: 'Contratos',
+      items: c.contracts
+        .filter((k) => m(k.title, c.companies.find((e) => e.id === k.companyId)?.name))
+        .slice(0, 5)
+        .map((k) => ({ clave: 'k' + k.id, label: k.title, icono: 'pen', cls: ESTADOS_CONTRATO[k.status].cls, pista: ESTADOS_CONTRATO[k.status].label, destino: { ruta: `/contratos?id=${k.id}` } })),
+    },
+    {
+      titulo: 'Portales de cliente',
+      items: c.companies
+        .filter((e) => q.length > 2 && normalizar(`portal ${e.name}`).includes(q) && normalizar('portal').includes(q.split(' ')[0]))
+        .slice(0, 4)
+        .map((e) => ({ clave: 'pt' + e.id, label: `Portal de ${e.name}`, icono: 'eye', cls: 'sage', pista: 'Ver como cliente', destino: { ruta: `/empresas?id=${e.id}&portal=1` } })),
     },
     {
       titulo: 'Documentos',

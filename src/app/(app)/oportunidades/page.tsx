@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { FASES_ABIERTAS, FASES_OPORTUNIDAD } from '@/lib/catalogos/crm';
 import type { FaseOportunidad, Oportunidad } from '@/lib/datos/entidades';
@@ -13,7 +14,6 @@ import { PillDisciplina } from '@/components/crm/comunes';
 import { Ayuda } from '@/components/ui/Ayuda';
 import { Cabecera } from '@/components/ui/Cabecera';
 import { Icono } from '@/components/ui/Icono';
-import { useToast } from '@/components/ui/Toasts';
 
 const FASES = Object.keys(FASES_OPORTUNIDAD) as FaseOportunidad[];
 
@@ -21,7 +21,6 @@ const FASES = Object.keys(FASES_OPORTUNIDAD) as FaseOportunidad[];
 export default function Oportunidades() {
   const { c, hoy } = useDatos();
   const abrir = useFormularios();
-  const toast = useToast();
   const { mover } = useAccionesCrm();
   const [encima, setEncima] = useState<FaseOportunidad | null>(null);
   const k = cifrasOportunidades(c.deals, hoy);
@@ -40,10 +39,10 @@ export default function Oportunidades() {
         titulo="Oportunidades"
         acciones={
           <>
-            <button type="button" className="btn" onClick={() => toast('El formulario para tu web llega en la Fase 4')}>
+            <Link className="btn" href="/perfil" title="Actívalo y copia el código en Perfil → Para tus clientes">
               <Icono n="inbox" />
               Formulario web
-            </button>
+            </Link>
             <button type="button" className="btn primary" onClick={() => abrir('deal')}>
               <Icono n="plus" />
               Nueva oportunidad

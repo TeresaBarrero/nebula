@@ -26,10 +26,12 @@ const nextConfig: NextConfig = {
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
+      // Nadie puede meter nebúla dentro de otra web… salvo el formulario, que está hecho para eso.
+      { source: '/((?!formulario/).*)', headers: [{ key: 'X-Frame-Options', value: 'DENY' }] },
+      { source: '/formulario/:slug', headers: [{ key: 'Content-Security-Policy', value: 'frame-ancestors *' }] },
       { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache' }] },
     ];
   },
