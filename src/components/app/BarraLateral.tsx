@@ -23,6 +23,7 @@ export function BarraLateral({ alNavegar }: { alNavegar: () => void }) {
     tareas: c.tasks.filter((t) => !t.done && t.due && t.due <= hoy).length,
     calendario: c.events.filter((e) => e.date === hoy).length,
     oportunidades: c.deals.filter((d) => FASES_ABIERTAS.includes(d.stage) && d.expected && d.expected < hoy).length,
+    contenidos: c.posts.filter((p) => (diasHasta(p.date, hoy) === 0 || diasHasta(p.date, hoy) === 1) && p.status !== 'programado' && p.status !== 'publicado').length,
     facturas: c.invoices.filter((f) => f.kind === 'factura' && f.status === 'emitida' && estadoDe(c, f, hoy) === 'vencida').length,
     igualas: c.retainers.filter((r) => igualaPorFacturar(r, hoy)).length + c.renewals.filter((n) => diasHasta(n.renewDate, hoy) <= 15).length,
   };

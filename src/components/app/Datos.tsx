@@ -25,6 +25,8 @@ type ApiDatos = {
   emitir: (id: Id) => Promise<Factura | null>;
   /** Guarda un archivo suelto (p. ej. el ticket de un gasto) y devuelve dónde quedó. */
   subirArchivo: (id: Id, archivo: File) => Promise<string | null>;
+  /** Descifra la contraseña de un acceso (o null si no se pudo). */
+  verClave: (id: Id) => Promise<string | null>;
   /** Abre un archivo guardado. */
   abrirArchivo: (ruta: string) => Promise<void>;
 };
@@ -51,7 +53,7 @@ export function ProveedorDatos({ children, cargando }: { children: ReactNode; ca
     almacen
       .cargarColecciones()
       .then((d) => {
-        if (vigente) setC(d);
+        if (vigente) setC({ ...d, accesses: d.accesses.map((a) => ({ ...a, password: undefined })) });
       })
       .catch(() => vigente && setError(true));
     return () => {
@@ -78,8 +80,10 @@ export function ProveedorDatos({ children, cargando }: { children: ReactNode; ca
   const api = useMemo<ApiDatos | null>(() => {
     if (!c) return null;
     // Si falla al guardar, se deshace solo ese cambio (no se pisa lo demás).
+    // La contraseña de un acceso se manda a guardar (cifrada) pero no se queda en la página.
+    const sinClave = <T,>(col: NombreColeccion, f: T): T => (col === 'accesses' ? ({ ...f, password: undefined } as T) : f);
     const crear: ApiDatos['crear'] = (col, fila) => {
-      poner((x) => ponerFila(x, col, fila));
+      poner((x) => ponerFila(x, col, sinClave(col, fila)));
       const quitar = (x: Colecciones) => ({ ...x, [col]: (x[col] as { id: Id }[]).filter((f) => f.id !== fila.id) });
       return conAviso(() => almacen.crear(col, fila), () => poner(quitar));
     };
@@ -93,7 +97,7 @@ export function ProveedorDatos({ children, cargando }: { children: ReactNode; ca
     const actualizar: ApiDatos['actualizar'] = (col, id, cambios) => {
       const fila = (c[col] as unknown as Record<string, unknown>[]).find((f) => f.id === id);
       const previos = Object.fromEntries(Object.keys(cambios).map((k) => [k, fila?.[k]])) as Partial<FilaDe<typeof col>>;
-      poner((x) => cambiarFila(x, col, id, cambios));
+      poner((x) => cambiarFila(x, col, id, sinClave(col, cambios)));
       return conAviso(() => almacen.actualizar(col, id, cambios), () => poner((x) => cambiarFila(x, col, id, previos)));
     };
     return {
@@ -176,6 +180,14 @@ export function ProveedorDatos({ children, cargando }: { children: ReactNode; ca
         }
       },
       abrirArchivo: async (ruta) => abrir(ruta),
+      verClave: async (id) => {
+        try {
+          return await almacen.verClave(id);
+        } catch {
+          toast('No se ha podido ver la contraseña. Inténtalo de nuevo.');
+          return null;
+        }
+      },
       abrirDocumento: async (d) => abrir(d.storagePath),
     };
     async function abrir(ruta: string) {

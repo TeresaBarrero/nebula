@@ -2,8 +2,14 @@ import { esDisciplina } from '@/lib/catalogos/disciplinas';
 import { FASES_OPORTUNIDAD, FASES_PROYECTO, PRIORIDADES } from '@/lib/catalogos/crm';
 import { CATEGORIAS_GASTO, TIPOS_RENOVACION } from '@/lib/catalogos/dinero';
 import { PLANTILLAS, esPlantilla } from '@/lib/catalogos/plantillas';
+import { CANALES, ESTADOS_PUBLICACION } from '@/lib/catalogos/trabajo';
 import { sumarDias } from '@/lib/reglas/fechas';
 import type {
+  Acceso,
+  Canal,
+  EstadoPublicacion,
+  HoraTrabajada,
+  Publicacion,
   Contacto,
   Disponibilidad,
   Empresa,
@@ -26,7 +32,7 @@ import type {
 } from '@/lib/datos/entidades';
 import type { TipoForm, Valores } from './definiciones';
 
-type Entidad = Empresa | Contacto | Oportunidad | Proyecto | Tarea | Reunion | Nota | Iguala | Renovacion | Gasto;
+type Entidad = Empresa | Contacto | Oportunidad | Proyecto | Tarea | Reunion | Nota | Iguala | Renovacion | Gasto | HoraTrabajada | Publicacion | Acceso;
 
 const s = (v: Valores, k: string, max = 5000) => String(v[k] ?? '').trim().slice(0, max);
 const n = (v: Valores, k: string, def = 0, min = 0, max = 1e9) => {
@@ -37,9 +43,13 @@ const nulo = (v: Valores, k: string) => s(v, k) || null;
 const b = (v: Valores, k: string) => v[k] === true;
 
 /** Valores iniciales del formulario a partir de una fila (o de los datos por defecto si es nueva). */
-export function aValores(tipo: TipoForm, fila: Record<string, unknown>): Valores {
+export function aValores(tipo: TipoForm, filaOriginal: Record<string, unknown>): Valores {
   const v: Valores = {};
+  // El kit de marca y el caso de éxito se editan como campos sueltos.
+  const parte = tipo === 'brand' ? filaOriginal.brand : tipo === 'case' ? filaOriginal.portfolio : null;
+  const fila = parte && typeof parte === 'object' ? { ...filaOriginal, ...(parte as Record<string, unknown>) } : filaOriginal;
   for (const [k, x] of Object.entries(fila)) {
+    if (x !== null && typeof x === 'object' && !Array.isArray(x)) continue;
     if (typeof x === 'boolean') v[k] = x;
     else if (Array.isArray(x)) v[k] = x.join(', ');
     else if (x === null || x === undefined) v[k] = '';
@@ -49,6 +59,9 @@ export function aValores(tipo: TipoForm, fila: Record<string, unknown>): Valores
     v.urgent = fila.urgent === true;
     v.important = fila.important !== false;
   }
+  if (tipo === 'time' && typeof fila.minutes === 'number') v.hours = String(Math.round((fila.minutes / 60) * 100) / 100);
+  // La contraseña nunca se rellena: vacía = no cambiarla.
+  if (tipo === 'access') v.password = '';
   return v;
 }
 
@@ -75,6 +88,15 @@ export function porDefecto(tipo: TipoForm, hoy: string): Record<string, unknown>
       return { type: 'dominio', renewDate: sumarDias(hoy, 365) };
     case 'expense':
       return { date: hoy, category: 'Otros', ivaPct: 21, deductible: true, base: '' };
+    case 'time':
+      return { date: hoy, hours: '', billable: true };
+    case 'post':
+      return { date: hoy, time: '13:00', channel: 'instagram', status: 'idea' };
+    case 'access':
+      return {};
+    case 'brand':
+    case 'case':
+      return {};
   }
 }
 
@@ -242,6 +264,59 @@ export function aEntidad(tipo: TipoForm, v: Valores, base: { id: string; created
         receiptPath: antes?.receiptPath ?? '',
         receiptName: antes?.receiptName ?? '',
       } satisfies Gasto;
+    }
+    case 'time': {
+      const antes = previo as Partial<HoraTrabajada> | null;
+      const proyecto = nulo(v, 'projectId');
+      return {
+        ...comun,
+        date: s(v, 'date') || base.hoy,
+        minutes: Math.max(1, Math.round(n(v, 'hours', 0, 0, 24) * 60)),
+        projectId: proyecto,
+        retainerId: proyecto ? null : nulo(v, 'retainerId'),
+        taskId: antes?.taskId ?? null,
+        note: s(v, 'note', 300),
+        billable: b(v, 'billable'),
+      } satisfies HoraTrabajada;
+    }
+    case 'post': {
+      const canal = s(v, 'channel');
+      const estado = s(v, 'status');
+      return {
+        ...comun,
+        companyId: nulo(v, 'companyId'),
+        channel: (Object.hasOwn(CANALES, canal) ? canal : 'instagram') as Canal,
+        date: s(v, 'date') || base.hoy,
+        time: /^\d\d:\d\d$/.test(s(v, 'time')) ? s(v, 'time') : '',
+        title: s(v, 'title', 200),
+        copy: s(v, 'copy'),
+        status: (Object.hasOwn(ESTADOS_PUBLICACION, estado) ? estado : 'idea') as EstadoPublicacion,
+      } satisfies Publicacion;
+    }
+    case 'access': {
+      const antes = previo as Partial<Acceso> | null;
+      const clave = String(v.password ?? '').slice(0, 500);
+      return {
+        ...comun,
+        companyId: nulo(v, 'companyId'),
+        service: s(v, 'service', 200),
+        url: s(v, 'url', 300),
+        username: s(v, 'username', 200),
+        hasPassword: clave ? true : Boolean(antes?.hasPassword),
+        // Vacía al editar = se queda la que había; al crear = sin contraseña.
+        password: clave || (antes ? undefined : ''),
+      } satisfies Acceso;
+    }
+    case 'brand': {
+      const antes = previo as unknown as Empresa;
+      return { ...antes, brand: { colors: s(v, 'colors', 300), fonts: s(v, 'fonts', 200), tone: s(v, 'tone', 1000), manual: s(v, 'manual', 200) } } satisfies Empresa;
+    }
+    case 'case': {
+      const antes = previo as unknown as Proyecto;
+      return {
+        ...antes,
+        portfolio: { featured: b(v, 'featured'), permission: b(v, 'permission'), summary: s(v, 'summary', 600), results: s(v, 'results', 200), link: s(v, 'link', 300) },
+      } satisfies Proyecto;
     }
     case 'note': {
       const antes = previo as Partial<Nota> | null;

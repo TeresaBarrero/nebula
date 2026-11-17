@@ -16,8 +16,8 @@ const OPCIONES: [string, NombreIcono, string, number, TipoForm?][] = [
   ['Proyecto', 'folder', 'butter', 1, 'project'],
   ['Oportunidad', 'funnel', 'lilac', 1, 'deal'],
   ['Contacto', 'users', 'sage', 1, 'contact'],
-  ['Apuntar horas', 'timer', 'sage', 3],
-  ['Publicación', 'megaphone', 'rose', 3],
+  ['Apuntar horas', 'timer', 'sage', 3, 'time'],
+  ['Publicación', 'megaphone', 'rose', 3, 'post'],
   ['Reunión', 'calendar', 'lilac', 1, 'event'],
   ['Tarea', 'check', 'peach', 1, 'task'],
 ];

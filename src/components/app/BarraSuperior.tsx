@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { destinoDe, reloj } from '@/lib/reglas/trabajo';
+import { useTrabajo } from '@/components/trabajo/Trabajo';
+import { useDatos } from './Datos';
 import { Icono } from '@/components/ui/Icono';
 import { Ayuda } from '@/components/ui/Ayuda';
-import { useToast } from '@/components/ui/Toasts';
 import { useAvisos } from './Avisos';
 import { useNebula } from './Nebula';
 
@@ -27,7 +29,6 @@ export function BarraSuperior({
   alternarAvisos: () => void;
 }) {
   const { modo, perfil, cambiarTema } = useNebula();
-  const toast = useToast();
   const { pendientes } = useAvisos();
   const sistemaOscuro = useSyncExternalStore(suscribirTemaSistema, () => matchMedia(OSCURO).matches, () => false);
   const oscuro = perfil.prefs.theme === 'dark' || (perfil.prefs.theme === 'system' && sistemaOscuro);
@@ -56,15 +57,7 @@ export function BarraSuperior({
           </Link>
         </div>
       )}
-      <button
-        type="button"
-        className="timer"
-        title="Cronometrar lo que estás haciendo"
-        onClick={() => toast('El cronómetro llega en la Fase 3')}
-      >
-        <Icono n="play" />
-        <span className="tlab">Cronómetro</span>
-      </button>
+      <BotonCronometro />
       <button
         type="button"
         className="icon-btn theme-btn"
@@ -90,5 +83,34 @@ export function BarraSuperior({
         )}
       </button>
     </header>
+  );
+}
+
+/** Cronómetro siempre visible (SPEC §3): en marcha muestra el tiempo y para al pulsarlo. */
+function BotonCronometro() {
+  const { c } = useDatos();
+  const t = useTrabajo();
+  const [ahora, setAhora] = useState(() => new Date());
+  const activo = t.cronometro;
+  useEffect(() => {
+    if (!activo) return;
+    const i = setInterval(() => setAhora(new Date()), 1000);
+    return () => clearInterval(i);
+  }, [activo]);
+  if (!activo)
+    return (
+      <button type="button" className="timer" title="Cronometrar lo que estás haciendo" onClick={t.elegirYEmpezar}>
+        <Icono n="play" />
+        <span className="tlab">Cronómetro</span>
+      </button>
+    );
+  const nombre = destinoDe(c, activo);
+  return (
+    <button type="button" className="timer on" title="Parar y guardar las horas" aria-label={`Parar el cronómetro de ${nombre} y guardar las horas`} onClick={() => void t.parar()}>
+      <span className="rec" aria-hidden="true" />
+      <span className="num">{reloj(activo.start, ahora)}</span>
+      <span className="tlab">{nombre}</span>
+      <Icono n="stop" />
+    </button>
   );
 }

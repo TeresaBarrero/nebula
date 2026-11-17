@@ -106,7 +106,7 @@ function Formulario({ tipo, datos, alCerrar }: { tipo: TipoForm; datos: Record<s
 
   const pie = (
     <>
-      {previo && (
+      {previo && !def.sinBorrar && (
         <button
           type="button"
           className="btn ghost danger left"
@@ -132,6 +132,11 @@ function Formulario({ tipo, datos, alCerrar }: { tipo: TipoForm; datos: Record<s
   return (
     <Modal titulo={previo ? def.editar : def.nuevo} alCerrar={alCerrar} comoFormulario={() => void guardar()} pie={pie}>
       <div className="modal-b">
+        {def.ayuda && (
+          <p className="muted full" style={{ margin: 0 }}>
+            {def.ayuda}
+          </p>
+        )}
         {normales.map((f, i) => (
           <CampoForm key={i} f={f} v={v} cambia={cambia} alElegirArchivo={setArchivo} error={'k' in f && errores[f.k]} primero={i === 0 || (i === 1 && normales[0].tipo === 'seccion')} />
         ))}
@@ -172,6 +177,22 @@ function CampoForm({
   const val = String(v[f.k] ?? '');
 
   switch (f.tipo) {
+    case 'clave':
+      return (
+        <label className={`field ${full}`}>
+          <span>{f.label}</span>
+          <input
+            className="input"
+            id={id}
+            type="password"
+            autoComplete="new-password"
+            value={val}
+            maxLength={f.max}
+            placeholder={v.hasPassword === 'true' || v.hasPassword === true ? 'Déjala en blanco para no cambiarla' : ''}
+            onChange={(e) => cambia(f.k, e.target.value)}
+          />
+        </label>
+      );
     case 'archivo':
       return (
         <label className={`field ${full}`}>

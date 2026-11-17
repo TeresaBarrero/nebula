@@ -16,9 +16,12 @@ import {
 import type { Colecciones, NombreColeccion } from '@/lib/datos/entidades';
 import { CATEGORIAS_GASTO, TIPOS_IVA, TIPOS_RENOVACION } from '@/lib/catalogos/dinero';
 import { PLANTILLAS } from '@/lib/catalogos/plantillas';
+import { CANALES, ESTADOS_PUBLICACION } from '@/lib/catalogos/trabajo';
 import { REPETICIONES } from '@/lib/reglas/tareas';
 
-export type TipoForm = 'contact' | 'company' | 'deal' | 'project' | 'task' | 'event' | 'note' | 'retainer' | 'renewal' | 'expense';
+export type TipoForm =
+  | 'contact' | 'company' | 'deal' | 'project' | 'task' | 'event' | 'note' | 'retainer' | 'renewal' | 'expense'
+  | 'time' | 'post' | 'access' | 'brand' | 'case';
 
 export type Valores = Record<string, string | boolean>;
 
@@ -27,7 +30,7 @@ type Opcion = { v: string; label: string; cls?: Pastel };
 export type Campo =
   | { tipo: 'seccion'; label: string; visible?: (v: Valores) => boolean }
   | {
-      tipo: 'text' | 'email' | 'tel' | 'number' | 'date' | 'time' | 'textarea' | 'check' | 'flags' | 'archivo';
+      tipo: 'text' | 'email' | 'tel' | 'number' | 'date' | 'time' | 'textarea' | 'check' | 'flags' | 'archivo' | 'clave';
       k: string;
       label: string;
       req?: boolean;
@@ -53,7 +56,7 @@ export type Campo =
       k: string;
       label: string;
       /** De qué lista salen las opciones. */
-      de: Extract<NombreColeccion, 'contacts' | 'companies' | 'projects' | 'tasks'>;
+      de: Extract<NombreColeccion, 'contacts' | 'companies' | 'projects' | 'tasks' | 'retainers'>;
       vacio?: string;
       filtro?: (fila: Record<string, unknown>, v: Valores) => boolean;
       full?: boolean;
@@ -61,7 +64,18 @@ export type Campo =
       visible?: (v: Valores) => boolean;
     };
 
-export type Definicion = { col: NombreColeccion; nuevo: string; editar: string; guardado: string; borrado: string; campos: Campo[] };
+export type Definicion = {
+  col: NombreColeccion;
+  nuevo: string;
+  editar: string;
+  guardado: string;
+  borrado: string;
+  campos: Campo[];
+  /** Edita una parte de otra cosa (el kit de marca de una empresa…): no se puede eliminar desde aquí. */
+  sinBorrar?: boolean;
+  /** Texto bajo el título. */
+  ayuda?: string;
+};
 
 const op = <T extends Record<string, { label: string; cls?: Pastel }>>(o: T): Opcion[] =>
   Object.entries(o).map(([v, x]) => ({ v, label: x.label, cls: x.cls }));
@@ -257,6 +271,81 @@ export const DEFINICIONES: Record<TipoForm, Definicion> = {
       { tipo: 'archivo', k: 'receipt', label: 'Ticket o factura del proveedor', full: true },
     ],
   },
+  time: {
+    col: 'timeEntries',
+    nuevo: 'Apuntar horas',
+    editar: 'Editar horas',
+    guardado: 'Horas apuntadas',
+    borrado: 'Horas eliminadas',
+    campos: [
+      { tipo: 'date', k: 'date', label: 'Día', req: true },
+      { tipo: 'number', k: 'hours', label: 'Horas (1,5 = hora y media)', req: true },
+      { tipo: 'select', k: 'projectId', label: 'Proyecto', de: 'projects', visible: (v) => !v.retainerId },
+      { tipo: 'select', k: 'retainerId', label: '…o iguala', de: 'retainers', visible: (v) => !v.projectId },
+      { tipo: 'text', k: 'note', label: '¿Qué has hecho?', full: true, max: 300 },
+      { tipo: 'check', k: 'billable', label: 'Es trabajo para un cliente (no interno)', full: true },
+    ],
+  },
+  post: {
+    col: 'posts',
+    nuevo: 'Nueva publicación',
+    editar: 'Editar publicación',
+    guardado: 'Publicación guardada',
+    borrado: 'Publicación eliminada',
+    campos: [
+      { tipo: 'text', k: 'title', label: 'Título o idea', req: true, full: true, max: 200 },
+      { tipo: 'select', k: 'companyId', label: '¿Para quién?', de: 'companies', vacio: 'Mi marca' },
+      { tipo: 'selectv', k: 'channel', label: 'Canal', opciones: op(CANALES) },
+      { tipo: 'date', k: 'date', label: 'Fecha', req: true },
+      { tipo: 'time', k: 'time', label: 'Hora' },
+      { tipo: 'pills', k: 'status', label: 'Estado', opciones: op(ESTADOS_PUBLICACION), full: true },
+      { tipo: 'textarea', k: 'copy', label: 'Texto de la publicación', full: true, max: 5000 },
+    ],
+  },
+  access: {
+    col: 'accesses',
+    nuevo: 'Nuevo acceso',
+    editar: 'Editar acceso',
+    guardado: 'Acceso guardado (la contraseña va cifrada)',
+    borrado: 'Acceso eliminado',
+    ayuda: 'La contraseña se guarda cifrada: solo tú puedes verla, pulsando el ojo.',
+    campos: [
+      { tipo: 'text', k: 'service', label: 'Servicio', req: true, full: true, max: 200 },
+      { tipo: 'select', k: 'companyId', label: 'Cliente', de: 'companies' },
+      { tipo: 'text', k: 'url', label: 'Dirección web', max: 300 },
+      { tipo: 'text', k: 'username', label: 'Usuario', max: 200 },
+      { tipo: 'clave', k: 'password', label: 'Contraseña', max: 500 },
+    ],
+  },
+  brand: {
+    col: 'companies',
+    nuevo: 'Kit de marca',
+    editar: 'Kit de marca',
+    guardado: 'Kit de marca guardado',
+    borrado: '',
+    sinBorrar: true,
+    campos: [
+      { tipo: 'text', k: 'colors', label: 'Colores (códigos separados por comas, p. ej. #2F3E46, #84A98C)', full: true, max: 300 },
+      { tipo: 'text', k: 'fonts', label: 'Tipografías', full: true, max: 200 },
+      { tipo: 'textarea', k: 'tone', label: 'Tono de comunicación', full: true, max: 1000 },
+      { tipo: 'text', k: 'manual', label: 'Manual de marca (nombre del archivo; súbelo en Documentos)', full: true, max: 200 },
+    ],
+  },
+  case: {
+    col: 'projects',
+    nuevo: 'Caso de éxito',
+    editar: 'Caso de éxito',
+    guardado: 'Caso de éxito guardado',
+    borrado: '',
+    sinBorrar: true,
+    campos: [
+      { tipo: 'textarea', k: 'summary', label: 'Resumen del proyecto (2 líneas)', full: true, max: 600 },
+      { tipo: 'text', k: 'results', label: 'Resultado medible (p. ej. +22 % de reservas)', full: true, max: 200 },
+      { tipo: 'text', k: 'link', label: 'Enlace (web, Behance…)', full: true, max: 300 },
+      { tipo: 'check', k: 'permission', label: 'El cliente me ha dado permiso para enseñarlo', full: true },
+      { tipo: 'check', k: 'featured', label: 'Mostrar en mi portfolio', full: true },
+    ],
+  },
   note: {
     col: 'notes',
     nuevo: 'Nueva nota',
@@ -275,7 +364,7 @@ export const DEFINICIONES: Record<TipoForm, Definicion> = {
 
 /** Texto de cada opción de una lista. */
 export function etiquetaFila(col: string, f: Record<string, unknown>): string {
-  return String(col === 'tasks' ? f.title : f.name ?? '');
+  return String(col === 'tasks' ? f.title : (f.name ?? ''));
 }
 
 export function opcionesDe(c: Colecciones, campo: Extract<Campo, { tipo: 'select' }>, v: Valores) {

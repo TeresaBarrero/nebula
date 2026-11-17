@@ -13,6 +13,7 @@ import { useDatos } from './Datos';
 import { useFormularios } from './formularios/Formulario';
 import type { TipoForm } from './formularios/definiciones';
 import { useDinero } from '@/components/dinero/Dinero';
+import { useTrabajo } from '@/components/trabajo/Trabajo';
 
 /** Grupo del menú al que pertenece una sección. */
 function grupoDe(id: string): string {
@@ -30,6 +31,8 @@ type Item = { clave: string; label: string; icono: NombreIcono; cls: Pastel; pis
 const CREAR: [TipoForm, string, NombreIcono, Pastel, string][] = [
   ['task', 'Crear tarea', 'check', 'peach', 'title'],
   ['event', 'Crear reunión', 'calendar', 'lilac', 'title'],
+  ['post', 'Planificar publicación', 'megaphone', 'rose', 'title'],
+  ['time', 'Apuntar horas', 'timer', 'sage', 'note'],
   ['deal', 'Crear oportunidad', 'funnel', 'butter', 'title'],
   ['contact', 'Crear contacto', 'users', 'sage', 'name'],
   ['company', 'Crear empresa', 'building', 'sand', 'name'],
@@ -48,6 +51,7 @@ export function Paleta({ alCerrar }: { alCerrar: () => void }) {
   const abrir = useFormularios();
   const irA = useIrA();
   const dinero = useDinero();
+  const trabajo = useTrabajo();
   const [texto, setTexto] = useState('');
   const [sel, setSel] = useState(0);
 
@@ -76,7 +80,8 @@ export function Paleta({ alCerrar }: { alCerrar: () => void }) {
           ir: () => dinero.nueva(k, literal ? { lines: [{ desc: raw, qty: 1, price: 0 }] } : {}),
         };
       });
-    const todas = [...crear, ...docs];
+    const crono = !q || normalizar('Iniciar cronómetro').includes(q) ? [{ clave: 'crono', label: 'Iniciar cronómetro', icono: 'play' as NombreIcono, cls: 'peach' as Pastel, pista: 'Crear', ir: () => trabajo.elegirYEmpezar() }] : [];
+    const todas = [...crono, ...crear, ...docs];
     if (todas.length) out.push({ titulo: 'Crear', items: q ? todas.slice(0, 4) : todas });
     const ir = SECCIONES_IR.filter((s) => !q || normalizar(s.label).includes(q)).map((s) => ({
       clave: 'ir-' + s.id,
@@ -88,7 +93,7 @@ export function Paleta({ alCerrar }: { alCerrar: () => void }) {
     }));
     if (ir.length) out.push({ titulo: 'Ir a', items: ir });
     return out;
-  }, [texto, c, hoy, abrir, irA, dinero]);
+  }, [texto, c, hoy, abrir, irA, dinero, trabajo]);
 
   const items = grupos.flatMap((g) => g.items);
   const elegir = (i: Item | undefined) => {

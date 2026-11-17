@@ -3,7 +3,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { FASES_ABIERTAS } from '@/lib/catalogos/crm';
 import { TIPOS_RENOVACION } from '@/lib/catalogos/dinero';
-import type { Factura, Iguala, Id, Renovacion } from '@/lib/datos/entidades';
+import type { Factura, Iguala, Id, LineaFactura, Renovacion } from '@/lib/datos/entidades';
 import { borradorDe, documentoNuevo, facturaDePresupuesto, rectificativaDe } from '@/lib/reglas/facturas';
 import { fechaLargaDe } from '@/lib/reglas/fechas';
 import { mesDe, nombreMes, siguienteRenovacion } from '@/lib/reglas/recurrentes';
@@ -27,6 +27,8 @@ export type AccionesDinero = {
   rechazar: (q: Factura) => Promise<void>;
   facturarIguala: (r: Iguala) => Promise<void>;
   renovar: (n: Renovacion) => Promise<void>;
+  /** Añade una línea al borrador de factura del cliente (o crea uno). Devuelve su id o null si no se pudo. */
+  anadirAlBorrador: (o: { companyId: Id | null; contactId?: Id | null; projectId?: Id | null; linea: LineaFactura }) => Promise<Id | null>;
 };
 
 const Ctx = createContext<AccionesDinero | null>(null);
@@ -61,7 +63,15 @@ export function ProveedorDinero({ children }: { children: ReactNode }) {
       }
     };
     const deal = (q: Factura) => c.deals.find((d) => d.id === q.dealId);
+    const anadirAlBorrador: AccionesDinero['anadirAlBorrador'] = async ({ companyId, contactId, projectId, linea }) => {
+      const previo = borradorDe(c.invoices, companyId);
+      if (previo) return (await actualizar('invoices', previo.id, { lines: [...previo.lines, linea] })) ? previo.id : null;
+      const persona = contactId ?? c.contacts.find((x) => x.companyId === companyId && x.type !== 'Colaborador')?.id ?? null;
+      const f = documentoNuevo('factura', { companyId, contactId: persona, projectId: projectId ?? null, lines: [linea] }, base());
+      return (await crear('invoices', f)) ? f.id : null;
+    };
     return {
+      anadirAlBorrador,
       nueva: (kind, o = {}) => abrirEditor(documentoNuevo(kind, o, base())),
       editar: abrirEditor,
       ver: setPanel,
@@ -101,17 +111,8 @@ export function ProveedorDinero({ children }: { children: ReactNode }) {
       },
       renovar: async (n) => {
         const linea = { desc: `Renovación ${TIPOS_RENOVACION[n.type].label.toLowerCase()} ${n.name} · 1 año`, qty: 1, price: n.price };
-        const previo = borradorDe(c.invoices, n.companyId);
-        let id: Id;
-        if (previo) {
-          if (!(await actualizar('invoices', previo.id, { lines: [...previo.lines, linea] }))) return;
-          id = previo.id;
-        } else {
-          const contacto = c.contacts.find((x) => x.companyId === n.companyId && x.type !== 'Colaborador');
-          const f = documentoNuevo('factura', { companyId: n.companyId, contactId: contacto?.id ?? null, lines: [linea] }, base());
-          if (!(await crear('invoices', f))) return;
-          id = f.id;
-        }
+        const id = await anadirAlBorrador({ companyId: n.companyId, linea });
+        if (!id) return;
         if (n.cost)
           await crear('expenses', {
             id: nuevoId(), date: hoy, supplier: n.provider || n.name, contactId: null, concept: `Renovación ${n.name}`, category: 'Renovaciones de clientes',
