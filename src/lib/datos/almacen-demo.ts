@@ -129,6 +129,9 @@ export function crearAlmacenDemo(store: Guardado, archivos?: Archivos): Almacen 
     async crear(col, fila) {
       cambiar((c) => ponerFila(c, col, fila));
     },
+    async crearVarios(col, filas) {
+      cambiar((c) => filas.reduce((x, f) => ponerFila(x, col, f), c));
+    },
     async actualizar(col, id, cambios) {
       cambiar((c) => cambiarFila(c, col, id, cambios));
     },

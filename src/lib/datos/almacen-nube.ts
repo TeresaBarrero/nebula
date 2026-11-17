@@ -166,6 +166,12 @@ export function crearAlmacenNube(sb: SupabaseClient<Database>): Almacen {
       if (error) throw error;
       if (col === 'projects') await ponerEquipo(fila.id, (fila as Proyecto).collaborators);
     },
+    async crearVarios(col, filas) {
+      if (!filas.length) return;
+      const { error } = await db.from(TABLA[col]).insert(filas.map((f) => ({ ...aFila(f as Record<string, unknown>), workspace_id: espacioId })));
+      if (error) throw error;
+      if (col === 'projects') for (const f of filas) await ponerEquipo(f.id, (f as Proyecto).collaborators);
+    },
     async actualizar(col, id, cambios) {
       const fila = aFila(cambios as Record<string, unknown>);
       if (Object.keys(fila).length) {

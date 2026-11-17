@@ -77,6 +77,8 @@ export interface Almacen {
   /** Todos los datos del espacio (contactos, empresas, proyectos…). */
   cargarColecciones(): Promise<Colecciones>;
   crear<K extends NombreColeccion>(col: K, fila: FilaDe<K>): Promise<void>;
+  /** Crea varias filas de una vez (p. ej. las tareas de una plantilla). */
+  crearVarios<K extends NombreColeccion>(col: K, filas: FilaDe<K>[]): Promise<void>;
   actualizar<K extends NombreColeccion>(col: K, id: Id, cambios: Partial<FilaDe<K>>): Promise<void>;
   /** Borra una fila; los vínculos y cascadas los resuelve igual que la base de datos (reglas/vinculos.ts). */
   borrar(col: NombreColeccion, id: Id): Promise<void>;

@@ -14,6 +14,7 @@ type ApiDatos = {
   c: Colecciones;
   hoy: string;
   crear: <K extends NombreColeccion>(col: K, fila: FilaDe<K>) => Promise<boolean>;
+  crearVarios: <K extends NombreColeccion>(col: K, filas: FilaDe<K>[]) => Promise<boolean>;
   actualizar: <K extends NombreColeccion>(col: K, id: Id, cambios: Partial<FilaDe<K>>) => Promise<boolean>;
   /** Borra (con «Deshacer» en el aviso). `etiqueta` es lo que dice el aviso, p. ej. «Contacto eliminado». */
   borrar: (col: NombreColeccion, id: Id, etiqueta?: string) => Promise<void>;
@@ -76,6 +77,13 @@ export function ProveedorDatos({ children, cargando }: { children: ReactNode; ca
       const quitar = (x: Colecciones) => ({ ...x, [col]: (x[col] as { id: Id }[]).filter((f) => f.id !== fila.id) });
       return conAviso(() => almacen.crear(col, fila), () => poner(quitar));
     };
+    const crearVarios: ApiDatos['crearVarios'] = (col, filas) => {
+      if (!filas.length) return Promise.resolve(true);
+      const ids = new Set(filas.map((f) => f.id));
+      poner((x) => filas.reduce((y, f) => ponerFila(y, col, f), x));
+      const quitar = (x: Colecciones) => ({ ...x, [col]: (x[col] as { id: Id }[]).filter((f) => !ids.has(f.id)) });
+      return conAviso(() => almacen.crearVarios(col, filas), () => poner(quitar));
+    };
     const actualizar: ApiDatos['actualizar'] = (col, id, cambios) => {
       const fila = (c[col] as unknown as Record<string, unknown>[]).find((f) => f.id === id);
       const previos = Object.fromEntries(Object.keys(cambios).map((k) => [k, fila?.[k]])) as Partial<FilaDe<typeof col>>;
@@ -86,6 +94,7 @@ export function ProveedorDatos({ children, cargando }: { children: ReactNode; ca
       c,
       hoy: hoy(),
       crear,
+      crearVarios,
       actualizar,
       borrar: async (col, id, etiqueta = 'Eliminado') => {
         const ef = efectoDeBorrar(c, col, id);

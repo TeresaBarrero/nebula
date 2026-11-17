@@ -41,6 +41,10 @@ export function historial(c: Colecciones, f: Filtro, hoy: Fecha): ElementoHistor
   for (const d of c.deals.filter(es))
     out.push({ clave: 'd' + d.id, fecha: d.createdAt.slice(0, 10), icono: 'funnel', cls: FASES_OPORTUNIDAD[d.stage].cls, titulo: `Oportunidad · ${FASES_OPORTUNIDAD[d.stage].label}`, texto: `${d.title} · ${eur(d.value)}` });
   for (const n of c.notes.filter(es)) out.push({ clave: 'n' + n.id, fecha: n.date, icono: 'note', cls: n.color, titulo: 'Nota', texto: n.text });
+  for (const v of c.deliverables.filter(es)) {
+    if (v.sentAt) out.push({ clave: 'vs' + v.id, fecha: v.sentAt, icono: 'send', cls: 'butter', titulo: 'Entregable enviado', texto: v.name });
+    if (v.approvedAt) out.push({ clave: 'va' + v.id, fecha: v.approvedAt, icono: 'tick', cls: 'sage', titulo: 'Entregable aprobado', texto: v.name });
+  }
   for (const d of c.files.filter(es)) out.push({ clave: 'f' + d.id, fecha: d.date, icono: 'paperclip', cls: 'mist', titulo: 'Documento añadido', texto: d.name });
 
   return out.sort((a, b) => b.fecha.localeCompare(a.fecha) || a.clave.localeCompare(b.clave));
