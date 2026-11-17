@@ -8,7 +8,33 @@ export type Database = {
   
   "public": {
           Tables: {
-            "activities": {
+            "accesses": {
+                  Row: {
+                    "company_id": string | null,"created_at": string,"has_password": boolean | null,"id": string,"password_enc": string | null,"service": string,"updated_at": string,"url": string,"username": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_id"?: string | null,"created_at"?: string,"has_password"?: never,"id"?: string,"password_enc"?: string | null,"service": string,"updated_at"?: string,"url"?: string,"username"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "company_id"?: string | null,"created_at"?: string,"has_password"?: never,"id"?: string,"password_enc"?: string | null,"service"?: string,"updated_at"?: string,"url"?: string,"username"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "accesses_workspace_id_company_id_fkey"
+      columns: ["workspace_id","company_id"]
+isOneToOne: false
+      referencedRelation: "companies"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "accesses_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"activities": {
                   Row: {
                     "contact_id": string | null,"created_at": string,"date": string,"id": string,"project_id": string | null,"text": string,"type": string,"updated_at": string,"workspace_id": string
                   }
@@ -140,14 +166,14 @@ isOneToOne: false
                   ]
                 },"deliverables": {
                   Row: {
-                    "approved_at": string | null,"billed_extra": number,"created_at": string,"id": string,"name": string,"project_id": string,"sent_at": string | null,"status": string,"updated_at": string,"workspace_id": string
+                    "approved_at": string | null,"billed_extra": number,"created_at": string,"feedback": NonNullable<Json>,"id": string,"name": string,"project_id": string,"sent_at": string | null,"status": string,"updated_at": string,"versions": NonNullable<Json>,"workspace_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "approved_at"?: string | null,"billed_extra"?: number,"created_at"?: string,"id"?: string,"name": string,"project_id": string,"sent_at"?: string | null,"status"?: string,"updated_at"?: string,"workspace_id": string
+                    "approved_at"?: string | null,"billed_extra"?: number,"created_at"?: string,"feedback"?: NonNullable<Json>,"id"?: string,"name": string,"project_id": string,"sent_at"?: string | null,"status"?: string,"updated_at"?: string,"versions"?: NonNullable<Json>,"workspace_id": string
                   }
                   Update: {
-                    "approved_at"?: string | null,"billed_extra"?: number,"created_at"?: string,"id"?: string,"name"?: string,"project_id"?: string,"sent_at"?: string | null,"status"?: string,"updated_at"?: string,"workspace_id"?: string
+                    "approved_at"?: string | null,"billed_extra"?: number,"created_at"?: string,"feedback"?: NonNullable<Json>,"id"?: string,"name"?: string,"project_id"?: string,"sent_at"?: string | null,"status"?: string,"updated_at"?: string,"versions"?: NonNullable<Json>,"workspace_id"?: string
                   }
                   Relationships: [
                     {
@@ -426,16 +452,42 @@ isOneToOne: false
       referencedColumns: ["workspace_id","id"]
     }
                   ]
-                },"profiles": {
+                },"posts": {
                   Row: {
-                    "created_at": string,"email": string,"full_name": string,"id": string,"name": string,"phone": string,"prefs": NonNullable<Json>,"privacy_accepted_at": string | null,"role": string,"signup_data": NonNullable<Json>,"status": string,"updated_at": string
+                    "channel": string,"company_id": string | null,"copy": string,"created_at": string,"date": string,"id": string,"status": string,"time": string,"title": string,"updated_at": string,"workspace_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"email"?: string,"full_name"?: string,"id": string,"name"?: string,"phone"?: string,"prefs"?: NonNullable<Json>,"privacy_accepted_at"?: string | null,"role"?: string,"signup_data"?: NonNullable<Json>,"status"?: string,"updated_at"?: string
+                    "channel"?: string,"company_id"?: string | null,"copy"?: string,"created_at"?: string,"date": string,"id"?: string,"status"?: string,"time"?: string,"title": string,"updated_at"?: string,"workspace_id": string
                   }
                   Update: {
-                    "created_at"?: string,"email"?: string,"full_name"?: string,"id"?: string,"name"?: string,"phone"?: string,"prefs"?: NonNullable<Json>,"privacy_accepted_at"?: string | null,"role"?: string,"signup_data"?: NonNullable<Json>,"status"?: string,"updated_at"?: string
+                    "channel"?: string,"company_id"?: string | null,"copy"?: string,"created_at"?: string,"date"?: string,"id"?: string,"status"?: string,"time"?: string,"title"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "posts_workspace_id_company_id_fkey"
+      columns: ["workspace_id","company_id"]
+isOneToOne: false
+      referencedRelation: "companies"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "posts_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profiles": {
+                  Row: {
+                    "active_timer": Json | null,"created_at": string,"email": string,"full_name": string,"id": string,"name": string,"phone": string,"prefs": NonNullable<Json>,"privacy_accepted_at": string | null,"role": string,"signup_data": NonNullable<Json>,"status": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active_timer"?: Json | null,"created_at"?: string,"email"?: string,"full_name"?: string,"id": string,"name"?: string,"phone"?: string,"prefs"?: NonNullable<Json>,"privacy_accepted_at"?: string | null,"role"?: string,"signup_data"?: NonNullable<Json>,"status"?: string,"updated_at"?: string
+                  }
+                  Update: {
+                    "active_timer"?: Json | null,"created_at"?: string,"email"?: string,"full_name"?: string,"id"?: string,"name"?: string,"phone"?: string,"prefs"?: NonNullable<Json>,"privacy_accepted_at"?: string | null,"role"?: string,"signup_data"?: NonNullable<Json>,"status"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -600,6 +652,44 @@ isOneToOne: false
       referencedColumns: ["workspace_id","id"]
     }
                   ]
+                },"time_entries": {
+                  Row: {
+                    "billable": boolean,"created_at": string,"date": string,"id": string,"minutes": number,"note": string,"project_id": string | null,"retainer_id": string | null,"task_id": string | null,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "billable"?: boolean,"created_at"?: string,"date"?: string,"id"?: string,"minutes": number,"note"?: string,"project_id"?: string | null,"retainer_id"?: string | null,"task_id"?: string | null,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "billable"?: boolean,"created_at"?: string,"date"?: string,"id"?: string,"minutes"?: number,"note"?: string,"project_id"?: string | null,"retainer_id"?: string | null,"task_id"?: string | null,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "time_entries_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "time_entries_workspace_id_project_id_fkey"
+      columns: ["workspace_id","project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "time_entries_workspace_id_retainer_id_fkey"
+      columns: ["workspace_id","retainer_id"]
+isOneToOne: false
+      referencedRelation: "retainers"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "time_entries_workspace_id_task_id_fkey"
+      columns: ["workspace_id","task_id"]
+isOneToOne: false
+      referencedRelation: "tasks"
+      referencedColumns: ["workspace_id","id"]
+    }
+                  ]
                 },"workspace_members": {
                   Row: {
                     "created_at": string,"id": string,"role": string,"updated_at": string,"user_id": string,"workspace_id": string
@@ -671,6 +761,9 @@ isOneToOne: true
 "admin_set_status":
 { Args: { "new_status": string,"target": string }; Returns: undefined
                            },
+"clave_accesos":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
 "emitir_documento":
 { Args: { "p_id": string }; Returns: {
               "client": Json | null,
@@ -707,11 +800,17 @@ isOneToOne: true
 "espacio_de_ruta":
 { Args: { "ruta": string }; Returns: string
                            },
+"guardar_acceso":
+{ Args: { "p_company": string,"p_id": string,"p_password": string,"p_service": string,"p_url": string,"p_username": string,"p_workspace": string }; Returns: undefined
+                           },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "is_member":
 { Args: { "ws": string }; Returns: boolean
+                           },
+"ver_clave_acceso":
+{ Args: { "p_id": string }; Returns: string
                            }
           }
           Enums: {
