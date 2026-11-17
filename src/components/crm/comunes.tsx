@@ -59,7 +59,7 @@ export function useCopiar() {
 }
 
 /** Fila de tarea con casilla, fecha (roja si va atrasada), proyecto, contacto, repetición y candado. */
-export function FilaTarea({ t, sinProyecto, sinContacto, punto }: { t: Tarea; sinProyecto?: boolean; sinContacto?: boolean; punto?: boolean }) {
+export function FilaTarea({ t, sinProyecto, sinContacto, punto, arrastrable }: { t: Tarea; sinProyecto?: boolean; sinContacto?: boolean; punto?: boolean; arrastrable?: boolean }) {
   const { c, hoy, crear, actualizar, borrar } = useDatos();
   const abrir = useFormularios();
   const toast = useToast();
@@ -86,7 +86,18 @@ export function FilaTarea({ t, sinProyecto, sinContacto, punto }: { t: Tarea; si
   };
 
   return (
-    <div className={`task ${t.done ? 'done' : ''}`}>
+    <div
+      className={`task ${t.done ? 'done' : ''}`}
+      draggable={arrastrable || undefined}
+      onDragStart={
+        arrastrable
+          ? (e) => {
+              e.dataTransfer.setData('text/plain', t.id);
+              e.dataTransfer.effectAllowed = 'move';
+            }
+          : undefined
+      }
+    >
       <button
         type="button"
         className={`check ${t.done ? 'on' : ''} ${b ? 'blocked' : ''}`}
