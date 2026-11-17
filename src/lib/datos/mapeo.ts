@@ -12,6 +12,11 @@ export const TABLA: Record<NombreColeccion, string> = {
   notes: 'notes',
   activities: 'activities',
   files: 'files',
+  retainers: 'retainers',
+  renewals: 'renewals',
+  invoices: 'invoices',
+  payments: 'payments',
+  expenses: 'expenses',
 };
 
 const aSnake = (k: string) => k.replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
@@ -22,12 +27,15 @@ const IGNORAR = new Set(['workspace_id', 'updated_at', 'brand', 'brief', 'portfo
 /** Campos de la app que no son columnas (se guardan aparte). */
 const NO_COLUMNA = new Set(['collaborators']);
 
+/** Columnas numeric: por si llegan como texto, se convierten a número. */
+const NUMERICOS = new Set(['value', 'budget', 'hours_budget', 'rate', 'estimate', 'fee', 'hours', 'cost', 'price', 'iva', 'irpf', 'amount', 'base', 'iva_pct', 'size']);
+
 /** Fila de la base de datos → objeto de la app. */
 export function deFila(fila: Record<string, unknown>): Record<string, unknown> {
   const o: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(fila)) {
     if (IGNORAR.has(k)) continue;
-    o[aCamel(k)] = v;
+    o[aCamel(k)] = NUMERICOS.has(k) && typeof v === 'string' ? Number(v) : v;
   }
   return o;
 }

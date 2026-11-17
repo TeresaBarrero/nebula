@@ -13,10 +13,10 @@ type DatosIrpf = { kind: FormaJuridica; irpfMode: ModoIrpf; irpf: number };
  * 0 si eres sociedad, si facturas a particulares o si la empresa cliente es particular.
  * Si no, la retención del perfil (15 o 7).
  */
-export function irpfPorDefecto(ajustes: DatosIrpf, empresa?: { is_private?: boolean } | null): number {
+export function irpfPorDefecto(ajustes: DatosIrpf, empresa?: { isPrivate?: boolean } | null): number {
   if (ajustes.kind === 'sociedad') return 0;
   if (ajustes.irpfMode === 'particulares') return 0;
-  if (empresa?.is_private) return 0;
+  if (empresa?.isPrivate) return 0;
   return Number(ajustes.irpf) || 0;
 }
 

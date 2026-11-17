@@ -46,11 +46,11 @@ describe('Retención IRPF por defecto (SPEC §7.4)', () => {
   });
   it('mixto: retención, salvo si la empresa cliente es particular', () => {
     expect(irpfPorDefecto({ ...base, irpfMode: 'mixto' })).toBe(15);
-    expect(irpfPorDefecto({ ...base, irpfMode: 'mixto' }, { is_private: true })).toBe(0);
+    expect(irpfPorDefecto({ ...base, irpfMode: 'mixto' }, { isPrivate: true })).toBe(0);
   });
   it('empresa cliente particular: 0', () => {
-    expect(irpfPorDefecto(base, { is_private: true })).toBe(0);
-    expect(irpfPorDefecto(base, { is_private: false })).toBe(15);
+    expect(irpfPorDefecto(base, { isPrivate: true })).toBe(0);
+    expect(irpfPorDefecto(base, { isPrivate: false })).toBe(15);
   });
   it('menos de 3 años como autónomo/a → 7 %; si no, 15 %', () => {
     expect(irpfDelPerfil(true)).toBe(7);

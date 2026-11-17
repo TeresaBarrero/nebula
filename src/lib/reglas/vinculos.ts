@@ -12,6 +12,9 @@ const VINCULOS: Partial<Record<NombreColeccion, Vinculo[]>> = {
     { col: 'contacts', campo: 'companyId', alBorrar: 'null' },
     { col: 'deals', campo: 'companyId', alBorrar: 'null' },
     { col: 'files', campo: 'companyId', alBorrar: 'null' },
+    { col: 'retainers', campo: 'companyId', alBorrar: 'null' },
+    { col: 'renewals', campo: 'companyId', alBorrar: 'cascada' },
+    { col: 'invoices', campo: 'companyId', alBorrar: 'null' },
   ],
   contacts: [
     { col: 'projects', campo: 'contactId', alBorrar: 'null' },
@@ -22,6 +25,9 @@ const VINCULOS: Partial<Record<NombreColeccion, Vinculo[]>> = {
     { col: 'notes', campo: 'contactId', alBorrar: 'null' },
     { col: 'activities', campo: 'contactId', alBorrar: 'null' },
     { col: 'files', campo: 'contactId', alBorrar: 'null' },
+    { col: 'retainers', campo: 'contactId', alBorrar: 'null' },
+    { col: 'invoices', campo: 'contactId', alBorrar: 'null' },
+    { col: 'expenses', campo: 'contactId', alBorrar: 'null' },
   ],
   projects: [
     { col: 'deals', campo: 'projectId', alBorrar: 'null' },
@@ -31,6 +37,14 @@ const VINCULOS: Partial<Record<NombreColeccion, Vinculo[]>> = {
     { col: 'activities', campo: 'projectId', alBorrar: 'null' },
     { col: 'files', campo: 'projectId', alBorrar: 'null' },
     { col: 'deliverables', campo: 'projectId', alBorrar: 'cascada' },
+    { col: 'invoices', campo: 'projectId', alBorrar: 'null' },
+    { col: 'expenses', campo: 'projectId', alBorrar: 'null' },
+  ],
+  deals: [{ col: 'invoices', campo: 'dealId', alBorrar: 'null' }],
+  retainers: [{ col: 'invoices', campo: 'retainerId', alBorrar: 'null' }],
+  invoices: [
+    { col: 'payments', campo: 'invoiceId', alBorrar: 'cascada' },
+    { col: 'invoices', campo: 'fromQuoteId', alBorrar: 'null' },
   ],
   tasks: [{ col: 'tasks', campo: 'blockedBy', alBorrar: 'null' }],
 };
@@ -40,7 +54,8 @@ type Fila = { id: Id } & Record<string, unknown>;
 /** Cambios que provoca borrar algo: filas que se borran y campos que se vacían. Sirve también para deshacer. */
 export type EfectoBorrado = {
   borradas: { col: NombreColeccion; fila: Fila }[];
-  desvinculadas: { col: NombreColeccion; id: Id; campo: string; antes: unknown }[];
+  /** `fija`: factura emitida; al deshacer no se vuelve a enlazar (no se puede modificar y ya guarda los datos del cliente). */
+  desvinculadas: { col: NombreColeccion; id: Id; campo: string; antes: unknown; fija?: boolean }[];
 };
 
 function filas(c: Colecciones, col: NombreColeccion): Fila[] {
@@ -58,7 +73,7 @@ export function efectoDeBorrar(c: Colecciones, col: NombreColeccion, id: Id): Ef
       for (const f of filas(c, v.col)) {
         if (f[v.campo] !== id) continue;
         if (v.alBorrar === 'cascada') visitar(v.col, f.id);
-        else ef.desvinculadas.push({ col: v.col, id: f.id, campo: v.campo, antes: id });
+        else ef.desvinculadas.push({ col: v.col, id: f.id, campo: v.campo, antes: id, ...(v.col === 'invoices' && f.kind === 'factura' && f.status === 'emitida' ? { fija: true } : {}) });
       }
     }
     // Un contacto borrado sale del equipo de los proyectos.
@@ -103,7 +118,7 @@ export function deshacerBorrado(c: Colecciones, ef: EfectoBorrado): Colecciones 
   const tocadas = new Set<NombreColeccion>([...ef.borradas.map((b) => b.col), ...ef.desvinculadas.map((d) => d.col)]);
   for (const col of tocadas) {
     const vueltas = ef.borradas.filter((b) => b.col === col).map((b) => b.fila);
-    const cambios = ef.desvinculadas.filter((d) => d.col === col);
+    const cambios = ef.desvinculadas.filter((d) => d.col === col && !d.fija);
     (n[col] as unknown as Fila[]) = [
       ...filas(c, col).map((f) => {
         const mios = cambios.filter((d) => d.id === f.id);

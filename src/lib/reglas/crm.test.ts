@@ -92,16 +92,23 @@ describe('Borrar con vínculos (igual que la base de datos)', () => {
     const d = aplicarBorrado(c, efectoDeBorrar(c, 'tasks', 't1'));
     expect(d.tasks.find((x) => x.id === 't10')?.blockedBy).toBeNull();
   });
-  it('«Deshacer» lo deja todo exactamente como estaba', () => {
+  it('«Deshacer» lo deja todo como estaba (salvo los enlaces de facturas emitidas, que no se tocan)', () => {
     const c = datos();
+    // Sin facturas emitidas, la vuelta es exacta.
+    const sinEmitidas = { ...c, invoices: c.invoices.filter((f) => f.status !== 'emitida'), payments: [] };
     for (const [col, id] of [['companies', 'co1'], ['projects', 'p1'], ['contacts', 'c6'], ['tasks', 't1']] as const) {
-      const ef = efectoDeBorrar(c, col, id);
-      const vuelta = deshacerBorrado(aplicarBorrado(c, ef), ef);
+      const ef = efectoDeBorrar(sinEmitidas, col, id);
+      const vuelta = deshacerBorrado(aplicarBorrado(sinEmitidas, ef), ef);
       for (const k of NOMBRES_COLECCION) {
         const orden = (xs: { id: string }[]) => [...xs].sort((a, b) => a.id.localeCompare(b.id));
-        expect(orden(vuelta[k] as { id: string }[])).toEqual(orden(c[k] as { id: string }[]));
+        expect(orden(vuelta[k] as { id: string }[])).toEqual(orden(sinEmitidas[k] as { id: string }[]));
       }
     }
+    // Con facturas emitidas: todo vuelve menos su enlace.
+    const ef = efectoDeBorrar(c, 'companies', 'co1');
+    const vuelta = deshacerBorrado(aplicarBorrado(c, ef), ef);
+    expect(vuelta.companies).toHaveLength(c.companies.length);
+    expect(vuelta.invoices.filter((f) => f.status === 'emitida' && f.client?.name === 'Estudio Alba S.L.').every((f) => f.companyId === null)).toBe(true);
   });
 });
 

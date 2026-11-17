@@ -1,7 +1,7 @@
 import type { Disciplina } from '@/lib/catalogos/disciplinas';
 import type { FormaJuridica, ModoIrpf } from '@/lib/reglas/irpf';
 import type { EfectoBorrado } from '@/lib/reglas/vinculos';
-import type { Colecciones, FilaDe, Id, NombreColeccion } from './entidades';
+import type { Colecciones, Factura, FilaDe, Id, NombreColeccion } from './entidades';
 
 export type Tema = 'system' | 'light' | 'dark';
 
@@ -85,6 +85,11 @@ export interface Almacen {
   /** Vuelve a poner lo borrado (para «Deshacer»). */
   restaurar(ef: EfectoBorrado): Promise<void>;
   marcarLeidos(claves: string[]): Promise<void>;
+  /**
+   * Emite una factura en borrador (número correlativo sin huecos, fecha de hoy, copia de los datos del cliente)
+   * o numera un presupuesto. Devuelve el documento como queda.
+   */
+  emitir(id: Id): Promise<Factura>;
 
   /** Guarda el archivo y devuelve dónde quedó (storagePath). */
   subirArchivo(id: Id, archivo: File): Promise<string>;

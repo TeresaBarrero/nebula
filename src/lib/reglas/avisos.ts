@@ -2,10 +2,13 @@ import { FASES_ABIERTAS, type Pastel } from '@/lib/catalogos/crm';
 import type { NombreIcono } from '@/lib/catalogos/iconos';
 import type { Colecciones, Fecha } from '@/lib/datos/entidades';
 import { diasHasta, relativa } from './fechas';
+import { eur, eur2 } from './dinero';
+import { estadoDe, totalesDe } from './facturas';
 import { empresaDe, ultimoContacto } from './historial';
+import { igualaPorFacturar, mesDe } from './recurrentes';
 
 /** A dónde lleva pulsar un aviso: una página o el formulario de algo. */
-export type Destino = { ruta: string } | { formulario: 'task' | 'deal' | 'event' | 'note'; id: string };
+export type Destino = { ruta: string } | { formulario: 'task' | 'deal' | 'event' | 'note' | 'expense' | 'retainer' | 'renewal'; id: string };
 
 export type Aviso = { clave: string; icono: NombreIcono; cls: Pastel; texto: string; sub: string; destino: Destino };
 
@@ -14,8 +17,8 @@ const dias = (n: number) => `${n} ${n === 1 ? 'día' : 'días'}`;
 /**
  * Avisos de la campana (SPEC §7.9). Se calculan cada vez a partir de los datos.
  * La clave incluye la fecha que lo provoca: si cambia (p. ej. se aplaza la tarea), vuelve a salir como no leído.
- * En la Fase 1 salen los de tareas, reuniones, entregables, oportunidades y contactos;
- * los de facturas, igualas, renovaciones, contratos, briefings y contenidos llegan con sus fases.
+ * Salen los de tareas, reuniones, entregables, oportunidades, contactos, facturas, igualas y renovaciones;
+ * los de contratos, briefings, rondas y contenidos llegan con sus fases.
  */
 export function calcularAvisos(c: Colecciones, hoy: Fecha): Aviso[] {
   const out: Aviso[] = [];
@@ -45,6 +48,27 @@ export function calcularAvisos(c: Colecciones, hoy: Fecha): Aviso[] {
   for (const x of c.contacts)
     if (x.consentVia === 'Formulario web' && d(x.createdAt.slice(0, 10)) >= -2)
       out.push({ clave: `lead-${x.id}`, icono: 'inbox', cls: 'peach', texto: `Nuevo contacto desde tu web: ${x.name}`, sub: empresaDe(c, x) || 'Llámale cuanto antes', destino: { ruta: `/contactos?id=${x.id}` } });
+
+  // ───── Dinero ─────
+  const empresa = (id: string | null) => c.companies.find((e) => e.id === id)?.name ?? '';
+  for (const r of c.retainers)
+    if (igualaPorFacturar(r, hoy))
+      out.push({ clave: `rb-${r.id}-${mesDe(hoy)}`, icono: 'repeat', cls: 'lilac', texto: `Toca facturar la iguala: ${r.name}`, sub: `${empresa(r.companyId)} · ${eur(r.fee)}`, destino: { ruta: '/igualas' } });
+  for (const n of c.renewals)
+    if (d(n.renewDate) <= 15)
+      out.push({
+        clave: `rn-${n.id}-${n.renewDate}`, icono: 'globe', cls: d(n.renewDate) < 0 ? 'rose' : 'butter',
+        texto: d(n.renewDate) < 0 ? `Ha caducado: ${n.name}` : `Renueva pronto: ${n.name}`,
+        sub: `${empresa(n.companyId)} · ${relativa(n.renewDate, hoy)}`, destino: { ruta: '/igualas?tab=renovaciones' },
+      });
+  for (const f of c.invoices) {
+    if (f.kind === 'factura' && f.status === 'emitida' && f.due && estadoDe(c, f, hoy) === 'vencida')
+      out.push({ clave: `inv-${f.id}`, icono: 'euro', cls: 'rose', texto: `La factura ${f.number} está sin pagar y fuera de plazo`, sub: `${eur2(totalesDe(c, f).pending)} · venció hace ${dias(-d(f.due))}`, destino: { ruta: `/facturas?id=${f.id}` } });
+    if (f.kind === 'factura' && f.status === 'borrador')
+      out.push({ clave: `dr-${f.id}`, icono: 'receipt', cls: 'mist', texto: 'Tienes una factura en borrador sin emitir', sub: `${empresa(f.companyId)} · ${eur2(totalesDe(c, f).total)}`, destino: { ruta: `/facturas?id=${f.id}` } });
+    if (f.kind === 'presupuesto' && f.status === 'enviado' && d(f.date) < -14)
+      out.push({ clave: `pre-${f.id}`, icono: 'receipt', cls: 'sand', texto: `Escribe para saber si aceptan el presupuesto ${f.number}`, sub: `${empresa(f.companyId)} · enviado hace ${dias(-d(f.date))}`, destino: { ruta: `/facturas?tipo=presupuesto&id=${f.id}` } });
+  }
 
   const sinPermiso = c.contacts.filter((x) => !x.consent);
   if (sinPermiso.length)

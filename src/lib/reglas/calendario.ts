@@ -1,6 +1,7 @@
 import type { Pastel } from '@/lib/catalogos/crm';
 import type { Colecciones, Fecha } from '@/lib/datos/entidades';
 import { iso } from './fechas';
+import { estadoDe } from './facturas';
 import { cuadranteDe } from './tareas';
 
 /** Días que se ven en la cuadrícula de un mes: de lunes a domingo, 5 o 6 semanas (monthGrid del prototipo). */
@@ -18,9 +19,9 @@ export type ElementoDia = { clave: string; texto: string; cls: Pastel };
 
 /**
  * Lo que aparece en un día del calendario (SPEC §6.10): reuniones y tareas abiertas que vencen
- * (las urgentes e importantes en rosa). Facturas y renovaciones se añaden en la Fase 2.
+ * (las urgentes e importantes en rosa), facturas sin cobrar que vencen y renovaciones.
  */
-export function elementosDelDia(c: Pick<Colecciones, 'events' | 'tasks'>, f: Fecha): ElementoDia[] {
+export function elementosDelDia(c: Pick<Colecciones, 'events' | 'tasks' | 'invoices' | 'payments' | 'renewals'>, f: Fecha, hoy: Fecha = f): ElementoDia[] {
   return [
     ...c.events
       .filter((e) => e.date === f)
@@ -29,7 +30,14 @@ export function elementosDelDia(c: Pick<Colecciones, 'events' | 'tasks'>, f: Fec
     ...c.tasks
       .filter((t) => t.due === f && !t.done)
       .map((t) => ({ clave: 't' + t.id, texto: t.title, cls: (cuadranteDe(t) === 'q1' ? 'rose' : 'butter') as Pastel })),
+    ...facturasQueVencen(c, f, hoy).map((x) => ({ clave: 'f' + x.id, texto: `Vence ${x.number}`, cls: 'lilac' as Pastel })),
+    ...c.renewals.filter((n) => n.renewDate === f).map((n) => ({ clave: 'n' + n.id, texto: `Renueva ${n.name}`, cls: 'sand' as Pastel })),
   ];
+}
+
+/** Facturas emitidas que vencen ese día y aún no están pagadas. */
+export function facturasQueVencen(c: Pick<Colecciones, 'invoices' | 'payments'>, f: Fecha, hoy: Fecha) {
+  return c.invoices.filter((x) => x.kind === 'factura' && x.due === f && ['pendiente', 'parcial', 'vencida'].includes(estadoDe(c, x, hoy)));
 }
 
 /** Mes siguiente o anterior. */

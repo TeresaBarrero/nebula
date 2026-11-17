@@ -4,7 +4,9 @@
  * Cada fase añade aquí los datos de sus pantallas (SPEC §14.2).
  */
 import type { Disciplina } from '@/lib/catalogos/disciplinas';
+import { r2 } from '@/lib/reglas/dinero';
 import { sumarDias } from '@/lib/reglas/fechas';
+import { nombreMes } from '@/lib/reglas/recurrentes';
 import type {
   Apunte,
   Colecciones,
@@ -12,9 +14,15 @@ import type {
   Documento,
   Empresa,
   Entregable,
+  Factura,
+  Gasto,
+  Iguala,
+  LineaFactura,
   Nota,
   Oportunidad,
+  Pago,
   Proyecto,
+  Renovacion,
   Reunion,
   Tarea,
   ViaPermiso,
@@ -207,5 +215,107 @@ export function semillaDemo(hoy: string): Colecciones {
     doc('fl5', 'Catalogo_final_Mirador.pdf', 8400000, 'application/pdf', -50, 'c7', 'co6', 'p4'),
   ];
 
-  return { companies, contacts, deals, projects, deliverables, tasks, events, notes, activities, files, notificationReads: [] };
+  // ───────── Fase 2 · Dinero ─────────
+  const retainers: Iguala[] = [
+    { id: 'r1', name: 'Redes sociales mensual', companyId: 'co5', contactId: 'c5', discipline: 'social', fee: 650, hours: 15, billingDay: 1, start: D(-200), services: '12 publicaciones al mes en Instagram y Facebook, stories semanales e informe mensual.', active: true, lastBilled: '', extraBilled: '', createdAt: creado(-200) },
+    { id: 'r2', name: 'Mantenimiento web y SEO', companyId: 'co1', contactId: 'c1', discipline: 'web', fee: 150, hours: 3, billingDay: 10, start: D(-45), services: 'Actualizaciones, copias de seguridad, pequeños cambios y SEO básico.', active: true, lastBilled: '', extraBilled: '', createdAt: creado(-45) },
+    { id: 'r3', name: 'Newsletter interna mensual', companyId: 'co2', contactId: 'c11', discipline: 'cint', fee: 400, hours: 8, billingDay: 1, start: D(-100), services: 'Newsletter para las 45 personas del despacho y cartelería de oficina.', active: true, lastBilled: '', extraBilled: '', createdAt: creado(-100) },
+  ];
+  const cuota: Record<string, [string, number]> = { r1: ['Redes sociales', 650], r2: ['Mantenimiento web y SEO', 150], r3: ['Newsletter interna', 400] };
+
+  const L = (desc: string, qty: number, price: number): LineaFactura => ({ desc, qty, price });
+  const doc0 = (o: Partial<Factura> & Pick<Factura, 'id' | 'kind' | 'series' | 'number' | 'status' | 'date'>): Factura => ({
+    companyId: null, contactId: null, projectId: null, retainerId: null, dealId: null, fromQuoteId: null, rectifiesId: null,
+    iva: 21, irpf: 15, due: sumarDias(o.date, 30), notes: '', lines: [], client: null, issuer: null, issuedAt: null, createdAt: `${o.date}T09:00:00.000Z`, ...o,
+  });
+  // Facturas emitidas: [empresa, contacto, proyecto, iguala, líneas, hace cuántos días, cuánto han pagado]
+  type Emitida = [string, string, string | null, string | null, LineaFactura[] | null, number, 'todo' | number];
+  const raw: Emitida[] = [
+    ['co4', 'c4', 'p8', null, [L('Identidad visual · proyecto completo', 1, 2100)], -215, 'todo'],
+    ['co6', 'c7', null, null, [L('Mantenimiento web · semestre', 1, 300)], -170, 'todo'],
+    ['co6', 'c7', 'p4', null, [L('Catálogo de temporada · 50 % al empezar', 1, 1600)], -150, 'todo'],
+    ['co1', 'c1', 'p1', null, [L('Web corporativa · anticipo del 25 %', 1, 1200)], -118, 'todo'],
+    ['co6', 'c7', 'p4', null, [L('Catálogo de temporada · 50 % a la entrega', 1, 1600)], -95, 'todo'],
+    ['co2', 'c11', null, 'r3', null, -72, 'todo'],
+    ['co5', 'c5', null, 'r1', null, -62, 'todo'],
+    ['co5', 'c5', 'p3', null, [L('Campaña de captación · anticipo', 1, 800)], -50, 'todo'],
+    ['co1', 'c1', null, 'r2', null, -42, 'todo'],
+    ['co2', 'c11', null, 'r3', null, -41, 'todo'],
+    ['co2', 'c2', null, null, [L('Consultoría inicial de comunicación (horas)', 6, 150)], -40, 0],
+    ['co5', 'c5', null, 'r1', null, -31, 'todo'],
+    ['co1', 'c1', 'p1', null, [L('Diseño UX · fase 2', 1, 1800)], -14, 'todo'],
+    ['co2', 'c11', null, 'r3', null, -11, 0],
+    ['co3', 'c3', 'p2', null, [L('Identidad de marca · anticipo del 30 %', 1, 600)], -6, 'todo'],
+    ['co5', 'c5', null, 'r1', null, -3, 500],
+  ];
+  const contador = new Map<string, number>();
+  const invoices: Factura[] = [];
+  const payments: Pago[] = [];
+  raw.forEach(([co, ct, p, r, lineas, dia, pagado], k) => {
+    const date = D(dia);
+    const anio = date.slice(0, 4);
+    const n = (contador.get(anio) ?? 30) + 1; // empieza en 31: hubo facturas antes de usar nebúla
+    contador.set(anio, n);
+    const lines = lineas ?? [L(`${cuota[r!][0]} · ${nombreMes(date)}`, 1, cuota[r!][1])];
+    const emp = companies.find((e) => e.id === co)!;
+    const id = 'f' + k;
+    invoices.push(
+      doc0({
+        id, kind: 'factura', series: 'F', number: `F-${anio}-${String(n).padStart(3, '0')}`, status: 'emitida', date, companyId: co, contactId: ct, projectId: p, retainerId: r, lines,
+        client: { name: emp.name, nif: emp.nif, address: emp.address }, issuedAt: `${date}T10:00:00.000Z`,
+      }),
+    );
+    const total = r2(lines.reduce((a, l) => a + l.qty * l.price, 0) * 1.06);
+    if (pagado) payments.push({ id: 'pg' + k, invoiceId: id, date: D(dia + (pagado === 'todo' ? 18 : 2)), amount: pagado === 'todo' ? total : pagado, method: 'Transferencia', createdAt: creado(dia) });
+  });
+  invoices.push(doc0({ id: 'fb', kind: 'factura', series: 'F', number: '', status: 'borrador', date: D(0), companyId: 'co1', contactId: 'c1', projectId: 'p1', lines: [L('Desarrollo web · fase 3', 1, 1500)] }));
+  const anioP = D(0).slice(0, 4);
+  const pz = (id: string, n: number, co: string, ct: string, p: string | null, lines: LineaFactura[], dia: number, status: Factura['status'], dealId: string) =>
+    doc0({ id, kind: 'presupuesto', series: 'P', number: `P-${anioP}-0${n}`, status, date: D(dia), companyId: co, contactId: ct, projectId: p, lines, dealId });
+  invoices.push(
+    pz('q1', 10, 'co6', 'c7', null, [L('Rediseño de la carta del restaurante', 1, 900)], -60, 'rechazado', 'd7'),
+    pz('q2', 11, 'co2', 'c2', 'p5', [L('Diseño UX/UI del portal', 1, 2500), L('Desarrollo (horas)', 50, 80)], -30, 'aceptado', 'd6'),
+    pz('q3', 12, 'co7', 'c8', 'p6', [L('Identidad de la app', 1, 2200), L('Página de lanzamiento', 1, 2400), L('Kit para redes sociales', 1, 800)], -18, 'enviado', 'd3'),
+    pz('q4', 13, 'co3', 'c3', null, [L('Packaging navideño · 3 diseños', 3, 400)], -2, 'borrador', 'd4'),
+    pz('q5', 14, 'co8', 'c9', null, [L('Diseño de etiquetas · edición limitada', 1, 1800), L('Adaptaciones a 3 formatos', 3, 200)], -15, 'enviado', 'd2'),
+  );
+  for (const r of retainers) r.lastBilled = invoices.filter((f) => f.retainerId === r.id).map((f) => f.date).sort().at(-1)?.slice(0, 7) ?? '';
+
+  const renovacion = (id: string, companyId: string, type: Renovacion['type'], name: string, provider: string, cost: number, price: number, dia: number): Renovacion => ({
+    id, companyId, type, name, provider, cost, price, renewDate: D(dia), createdAt: creado(-300),
+  });
+  const renewals: Renovacion[] = [
+    renovacion('n1', 'co1', 'dominio', 'estudioalba.es', 'DonDominio', 12, 25, 18),
+    renovacion('n2', 'co1', 'hosting', 'Hosting WordPress', 'Raiola Networks', 90, 180, 40),
+    renovacion('n3', 'co5', 'dominio', 'clinicasanz.es', 'DonDominio', 12, 25, 6),
+    renovacion('n4', 'co5', 'licencia', 'Elementor Pro', 'Elementor', 59, 90, 75),
+    renovacion('n5', 'co2', 'hosting', 'Servidor del portal', 'Hetzner', 240, 360, 150),
+    renovacion('n6', 'co6', 'dominio', 'hotelmirador.es', 'DonDominio', 12, 25, -3),
+    renovacion('n7', 'co6', 'email', 'Correo profesional (5 cuentas)', 'Google Workspace', 360, 450, 60),
+  ];
+
+  const gasto = (id: string, dia: number, supplier: string, concept: string, category: string, base: number, ivaPct: number, extra: Partial<Gasto> = {}): Gasto => ({
+    id, date: D(dia), supplier, contactId: null, concept, category, base, ivaPct, deductible: true, projectId: null, receiptPath: '', receiptName: '', createdAt: creado(dia), ...extra,
+  });
+  const expenses: Gasto[] = [];
+  for (let k = 0; k < 6; k++)
+    expenses.push(
+      gasto(`xa${k}`, -k * 30 - 2, 'Adobe', 'Creative Cloud · cuota mensual', 'Software y suscripciones', 60.49, 21, { receiptName: 'adobe.pdf' }),
+      gasto(`xs${k}`, -k * 30 - 1, 'Seguridad Social', 'Cuota de autónomos', 'Cuota de autónomos', 294, 0),
+      gasto(`xc${k}`, -k * 30 - 5, 'Coworking La Nave', 'Puesto fijo mensual', 'Oficina', 150, 21),
+    );
+  expenses.push(
+    gasto('x1', -12, 'Pablo Medina', 'Desarrollo web · fase 2', 'Colaboradores', 1000, 21, { contactId: 'c6', projectId: 'p1', receiptName: 'Factura_PM_0112.pdf' }),
+    gasto('x2', -100, 'Imprenta Ortega', 'Impresión de 300 catálogos', 'Imprenta y material', 950, 21, { contactId: 'c4', projectId: 'p4', receiptName: 'Ortega_F2291.pdf' }),
+    gasto('x3', -20, 'Meta', 'Anuncios de la campaña de captación', 'Publicidad', 300, 21, { projectId: 'p3' }),
+    gasto('x4', -45, 'Domestika', 'Curso de escritura para interfaces', 'Formación', 39.9, 21),
+    gasto('x5', -9, 'Renfe', 'Tren Madrid–Valencia · visita La Espiga', 'Transporte', 58.2, 10, { projectId: 'p2', receiptName: 'billete_renfe.pdf' }),
+    gasto('x6', -9, 'Ainhoa Ruiz', 'Sesión de fotos de producto', 'Colaboradores', 300, 21, { contactId: 'c13', projectId: 'p2', receiptName: 'AR_factura_031.pdf' }),
+    gasto('x7', -7, 'Jordi Puig', 'Textos de la campaña interna', 'Colaboradores', 240, 21, { contactId: 'c14', projectId: 'p7' }),
+  );
+
+  return {
+    companies, contacts, deals, projects, deliverables, tasks, events, notes, activities, files,
+    retainers, renewals, invoices, payments, expenses, notificationReads: [],
+  };
 }

@@ -1,5 +1,8 @@
 import { CUADRANTES, ESTADOS_ENTREGABLE, FASES_OPORTUNIDAD, FASES_PROYECTO, colorAvatar, type Pastel } from '@/lib/catalogos/crm';
 import { DISCIPLINAS } from '@/lib/catalogos/disciplinas';
+import { ESTADOS_FACTURA, TIPOS_RENOVACION } from '@/lib/catalogos/dinero';
+import { eur } from './dinero';
+import { estadoDe, totales } from './facturas';
 import type { NombreIcono } from '@/lib/catalogos/iconos';
 import type { Colecciones, Fecha } from '@/lib/datos/entidades';
 import type { Destino } from './avisos';
@@ -12,8 +15,8 @@ export type Resultado = { clave: string; label: string; icono: NombreIcono; cls:
 export type Grupo = { titulo: string; items: Resultado[] };
 
 /**
- * Buscador ⌘K (SPEC §6.19): contactos, empresas, proyectos, oportunidades, tareas, entregables, documentos y notas.
- * Facturas, igualas, gastos, contenidos y contratos se añaden con sus fases.
+ * Buscador ⌘K (SPEC §6.19): contactos, empresas, proyectos, oportunidades, tareas, entregables, facturas,
+ * igualas, renovaciones, gastos, documentos y notas. Contenidos, contratos y portales se añaden con sus fases.
  */
 export function buscar(c: Colecciones, texto: string, hoy: Fecha): Grupo[] {
   const q = normalizar(texto.trim());
@@ -59,6 +62,34 @@ export function buscar(c: Colecciones, texto: string, hoy: Fecha): Grupo[] {
         .filter((v) => m(v.name))
         .slice(0, 5)
         .map((v) => ({ clave: 'v' + v.id, label: v.name, icono: 'layers', cls: ESTADOS_ENTREGABLE[v.status].cls, pista: proyecto(v.projectId)?.name ?? '', destino: { ruta: `/proyectos?p=${v.projectId}` } })),
+    },
+    {
+      titulo: 'Facturas',
+      items: c.invoices
+        .filter((f) => m(f.number || 'borrador', f.lines.map((l) => l.desc).join(' '), f.client?.name ?? c.companies.find((e) => e.id === f.companyId)?.name))
+        .slice(0, 6)
+        .map((f) => {
+          const st = ESTADOS_FACTURA[estadoDe(c, f, hoy)];
+          return { clave: 'i' + f.id, label: `${f.number || 'Borrador'} · ${f.lines[0]?.desc ?? ''}`, icono: 'receipt', cls: st.cls, pista: `${f.kind === 'presupuesto' ? 'Presupuesto' : st.label} · ${eur(totales(f).total)}`, destino: { ruta: `/facturas?${f.kind === 'presupuesto' ? 'tipo=presupuesto&' : ''}id=${f.id}` } };
+        }),
+    },
+    {
+      titulo: 'Igualas y renovaciones',
+      items: [
+        ...c.retainers
+          .filter((r) => m(r.name, c.companies.find((e) => e.id === r.companyId)?.name))
+          .map((r) => ({ clave: 'r' + r.id, label: r.name, icono: 'repeat' as const, cls: 'lilac' as Pastel, pista: `${eur(r.fee)}/mes`, destino: { formulario: 'retainer' as const, id: r.id } })),
+        ...c.renewals
+          .filter((n) => m(n.name, n.provider))
+          .map((n) => ({ clave: 'n' + n.id, label: n.name, icono: 'globe' as const, cls: TIPOS_RENOVACION[n.type].cls, pista: relativa(n.renewDate, hoy), destino: { formulario: 'renewal' as const, id: n.id } })),
+      ],
+    },
+    {
+      titulo: 'Gastos',
+      items: c.expenses
+        .filter((g) => m(g.supplier, g.concept))
+        .slice(0, 5)
+        .map((g) => ({ clave: 'x' + g.id, label: `${g.supplier} · ${g.concept}`, icono: 'wallet', cls: 'peach', pista: eur(g.base), destino: { formulario: 'expense', id: g.id } })),
     },
     {
       titulo: 'Documentos',

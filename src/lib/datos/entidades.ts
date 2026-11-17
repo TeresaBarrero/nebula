@@ -175,6 +175,95 @@ export type Documento = {
   createdAt: string;
 };
 
+// ───────── Fase 2 · Dinero (SPEC §4.9–4.12) ─────────
+
+export type LineaFactura = { desc: string; qty: number; price: number };
+export type TipoDocumento = 'factura' | 'presupuesto';
+export type Serie = 'F' | 'R' | 'P';
+export type EstadoFacturaGuardado = 'borrador' | 'emitida';
+export type EstadoPresupuesto = 'borrador' | 'enviado' | 'aceptado' | 'rechazado';
+/** Datos del cliente copiados en la factura al emitirla. */
+export type DatosCliente = { name: string; nif: string; address: string };
+/** Datos de quien factura copiados al emitir. */
+export type DatosEmisor = { legalName: string; nif: string; address: string; iban: string };
+
+export type Factura = {
+  id: Id;
+  kind: TipoDocumento;
+  series: Serie;
+  /** Vacío hasta emitir (facturas) o hasta guardarlo por primera vez (presupuestos). */
+  number: string;
+  status: EstadoFacturaGuardado | EstadoPresupuesto;
+  companyId: Id | null;
+  contactId: Id | null;
+  projectId: Id | null;
+  retainerId: Id | null;
+  dealId: Id | null;
+  fromQuoteId: Id | null;
+  rectifiesId: Id | null;
+  iva: number;
+  irpf: number;
+  date: Fecha;
+  due: Fecha | null;
+  notes: string;
+  lines: LineaFactura[];
+  client: DatosCliente | null;
+  issuer: DatosEmisor | null;
+  issuedAt: string | null;
+  createdAt: string;
+};
+
+export type MetodoPago = 'Transferencia' | 'Bizum' | 'Tarjeta' | 'Efectivo' | 'Domiciliación';
+export type Pago = { id: Id; invoiceId: Id; date: Fecha; amount: number; method: string; createdAt: string };
+
+export type Gasto = {
+  id: Id;
+  date: Fecha;
+  supplier: string;
+  contactId: Id | null;
+  concept: string;
+  category: string;
+  base: number;
+  ivaPct: number;
+  deductible: boolean;
+  projectId: Id | null;
+  /** Ticket guardado (vacío = sin ticket). */
+  receiptPath: string;
+  receiptName: string;
+  createdAt: string;
+};
+
+export type Iguala = {
+  id: Id;
+  name: string;
+  companyId: Id | null;
+  contactId: Id | null;
+  discipline: Disciplina | null;
+  fee: number;
+  hours: number;
+  billingDay: number;
+  services: string;
+  active: boolean;
+  start: Fecha | null;
+  /** Último mes facturado, «YYYY-MM». */
+  lastBilled: string;
+  extraBilled: string;
+  createdAt: string;
+};
+
+export type TipoRenovacion = 'dominio' | 'hosting' | 'ssl' | 'licencia' | 'email';
+export type Renovacion = {
+  id: Id;
+  companyId: Id | null;
+  type: TipoRenovacion;
+  name: string;
+  provider: string;
+  cost: number;
+  price: number;
+  renewDate: Fecha;
+  createdAt: string;
+};
+
 export type Colecciones = {
   companies: Empresa[];
   contacts: Contacto[];
@@ -186,6 +275,11 @@ export type Colecciones = {
   notes: Nota[];
   activities: Apunte[];
   files: Documento[];
+  retainers: Iguala[];
+  renewals: Renovacion[];
+  invoices: Factura[];
+  payments: Pago[];
+  expenses: Gasto[];
   /** Claves de avisos ya leídos (SPEC §7.9). */
   notificationReads: string[];
 };
@@ -204,6 +298,11 @@ export const NOMBRES_COLECCION: NombreColeccion[] = [
   'notes',
   'activities',
   'files',
+  'retainers',
+  'renewals',
+  'invoices',
+  'payments',
+  'expenses',
 ];
 
 export function coleccionesVacias(): Colecciones {
@@ -218,6 +317,11 @@ export function coleccionesVacias(): Colecciones {
     notes: [],
     activities: [],
     files: [],
+    retainers: [],
+    renewals: [],
+    invoices: [],
+    payments: [],
+    expenses: [],
     notificationReads: [],
   };
 }

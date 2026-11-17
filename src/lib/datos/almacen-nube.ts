@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/tipos-bd';
 import { esDisciplina } from '@/lib/catalogos/disciplinas';
 import { limpiarDatosAsistente } from './asistente';
-import { NOMBRES_COLECCION, coleccionesVacias, type Proyecto } from './entidades';
+import { NOMBRES_COLECCION, coleccionesVacias, type Factura, type Proyecto } from './entidades';
 import { TABLA, aFila, deFila } from './mapeo';
 import {
   AJUSTES_POR_DEFECTO,
@@ -187,7 +187,13 @@ export function crearAlmacenNube(sb: SupabaseClient<Database>): Almacen {
     },
     async restaurar(ef) {
       for (const { col, fila } of ef.borradas) await this.crear(col, fila as never);
-      for (const d of ef.desvinculadas) await this.actualizar(d.col, d.id, { [d.campo]: d.antes } as never);
+      for (const d of ef.desvinculadas.filter((x) => !x.fija)) await this.actualizar(d.col, d.id, { [d.campo]: d.antes } as never);
+    },
+    async emitir(id) {
+      // La numeración la hace la base de datos (emitir_documento): atómica y sin huecos.
+      const { data, error } = await db.rpc('emitir_documento', { p_id: id });
+      if (error) throw new Error(error.message);
+      return deFila(data as Record<string, unknown>) as unknown as Factura;
     },
     async marcarLeidos(claves) {
       if (!claves.length) return;

@@ -2,12 +2,31 @@ import { hoy } from '@/lib/reglas/fechas';
 import { aplicarBorrado, cambiarFila, deshacerBorrado, efectoDeBorrar, ponerFila } from '@/lib/reglas/vinculos';
 import { AJUSTES_POR_DEFECTO, type Ajustes, type Almacen, type Cargado, type DatosAsistente, type Perfil } from './tipos';
 import { limpiarDatosAsistente } from './asistente';
-import { coleccionesVacias, type Colecciones } from './entidades';
+import { cambioPermitido, cambiosAlEmitir, esEmitida, problemaParaEmitir } from '@/lib/reglas/facturas';
+import { coleccionesVacias, type Colecciones, type Factura } from './entidades';
 import { semillaDemo } from './semilla';
 
 /** Dónde guarda la demo sus datos en el navegador. Si cambia la forma de los datos, se sube `v`. */
 export const CLAVE_DEMO = 'nebula-demo';
-const VERSION = 2;
+const VERSION = 3;
+
+/** Datos de dinero de ejemplo, sin enlaces a cosas que ya se borraron en la demo. */
+function dineroDeEjemplo(semilla: Colecciones, previas: Partial<Colecciones>): Pick<Colecciones, 'retainers' | 'renewals' | 'invoices' | 'payments' | 'expenses'> {
+  const ok = (lista: { id: string }[] | undefined, id: string | null) => (id && lista?.some((x) => x.id === id) ? id : null);
+  return {
+    retainers: semilla.retainers.map((r) => ({ ...r, companyId: ok(previas.companies, r.companyId), contactId: ok(previas.contacts, r.contactId) })),
+    renewals: semilla.renewals.filter((n) => ok(previas.companies, n.companyId)),
+    invoices: semilla.invoices.map((f) => ({
+      ...f,
+      companyId: ok(previas.companies, f.companyId),
+      contactId: ok(previas.contacts, f.contactId),
+      projectId: ok(previas.projects, f.projectId),
+      dealId: ok(previas.deals, f.dealId),
+    })),
+    payments: semilla.payments,
+    expenses: semilla.expenses.map((g) => ({ ...g, contactId: ok(previas.contacts, g.contactId), projectId: ok(previas.projects, g.projectId) })),
+  };
+}
 
 export type EstadoDemo = {
   v: number;
@@ -52,7 +71,13 @@ export function leerDemo(store: Guardado, dia: string = hoy()): EstadoDemo {
       const s = JSON.parse(raw) as Partial<EstadoDemo>;
       if (s && s.perfil && s.ajustes) {
         // Versión 1 (Fase 0): conserva perfil y asistente y añade los datos de ejemplo.
-        const colecciones = s.v === VERSION && s.colecciones ? { ...coleccionesVacias(), ...s.colecciones } : semillaDemo(dia);
+        // Versión 2 (Fase 1): conserva lo hecho en la demo y añade los datos de dinero de ejemplo.
+        const colecciones =
+          s.v === VERSION && s.colecciones
+            ? { ...coleccionesVacias(), ...s.colecciones }
+            : s.v === 2 && s.colecciones
+              ? { ...coleccionesVacias(), ...s.colecciones, ...dineroDeEjemplo(semillaDemo(dia), s.colecciones) }
+              : semillaDemo(dia);
         return {
           v: VERSION,
           perfil: { ...perfilEjemplo(), ...s.perfil },
@@ -133,10 +158,30 @@ export function crearAlmacenDemo(store: Guardado, archivos?: Archivos): Almacen 
       cambiar((c) => filas.reduce((x, f) => ponerFila(x, col, f), c));
     },
     async actualizar(col, id, cambios) {
-      cambiar((c) => cambiarFila(c, col, id, cambios));
+      // Las mismas reglas que la base de datos: una factura emitida no se toca.
+      const c = leerDemo(store).colecciones;
+      const f = col === 'invoices' ? c.invoices.find((x) => x.id === id) : undefined;
+      if (f && !cambioPermitido(f, cambios as Partial<Factura>)) throw new Error('Una factura emitida no se puede modificar');
+      cambiar((x) => cambiarFila(x, col, id, cambios));
     },
     async borrar(col, id) {
-      cambiar((c) => aplicarBorrado(c, efectoDeBorrar(c, col, id)));
+      const c = leerDemo(store).colecciones;
+      const ef = efectoDeBorrar(c, col, id);
+      if (ef.borradas.some((b) => b.col === 'invoices' && esEmitida(b.fila as unknown as Factura))) throw new Error('Una factura emitida no se puede borrar');
+      cambiar((x) => aplicarBorrado(x, ef));
+    },
+    async emitir(id) {
+      const s = leerDemo(store);
+      const f = s.colecciones.invoices.find((x) => x.id === id);
+      if (!f) throw new Error('No se encuentra el documento');
+      const problema = problemaParaEmitir(f);
+      if (problema) throw new Error(problema);
+      const empresa = s.colecciones.companies.find((e) => e.id === f.companyId);
+      const cambios = cambiosAlEmitir(f, s.colecciones.invoices, empresa, s.ajustes, hoy(), new Date().toISOString());
+      const nueva = { ...f, ...cambios };
+      s.colecciones = cambiarFila(s.colecciones, 'invoices', id, cambios);
+      escribirDemo(store, s);
+      return nueva;
     },
     async restaurar(ef) {
       cambiar((c) => deshacerBorrado(c, ef));
