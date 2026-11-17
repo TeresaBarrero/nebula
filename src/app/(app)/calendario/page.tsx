@@ -2,7 +2,9 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
-import { diasDelMes, elementosDelDia, moverMes } from '@/lib/reglas/calendario';
+import { diasDelMes, elementosDelDia, facturasQueVencen, moverMes } from '@/lib/reglas/calendario';
+import { TIPOS_RENOVACION } from '@/lib/catalogos/dinero';
+import { FilaFactura } from '@/components/dinero/Listas';
 import { aFecha } from '@/lib/reglas/fechas';
 import { useDatos } from '@/components/app/Datos';
 import { useFormularios } from '@/components/app/formularios/Formulario';
@@ -35,6 +37,8 @@ function Calendario() {
 
   const reuniones = c.events.filter((e) => e.date === sel).sort((a, b) => a.time.localeCompare(b.time));
   const tareas = c.tasks.filter((t) => t.due === sel);
+  const vencen = facturasQueVencen(c, sel, hoy);
+  const renuevan = c.renewals.filter((n) => n.renewDate === sel);
   const irHoy = () => {
     setSel(hoy);
     setVista({ anio: aFecha(hoy).getFullYear(), mes: aFecha(hoy).getMonth() });
@@ -52,7 +56,7 @@ function Calendario() {
           </button>
         }
       >
-        Reuniones y fechas límite de tareas. Los vencimientos de facturas y renovaciones aparecerán aquí en la Fase 2.
+        Reuniones, fechas límite de tareas, vencimientos de facturas y renovaciones.
       </Cabecera>
       <div className="cal-wrap">
         <section className="card cal">
@@ -75,7 +79,7 @@ function Calendario() {
               </div>
             ))}
             {diasDelMes(vista.anio, vista.mes).map(({ fecha, delMes }) => {
-              const it = elementosDelDia(c, fecha);
+              const it = elementosDelDia(c, fecha, hoy);
               return (
                 <button
                   type="button"
@@ -115,6 +119,33 @@ function Calendario() {
             ))}
             {!tareas.length && <div className="empty">Ninguna tarea vence este día.</div>}
           </div>
+          {vencen.length > 0 && (
+            <>
+              <div className="sec-lbl">Facturas que vencen</div>
+              <div className="list">
+                {vencen.map((f) => (
+                  <FilaFactura key={f.id} f={f} />
+                ))}
+              </div>
+            </>
+          )}
+          {renuevan.length > 0 && (
+            <>
+              <div className="sec-lbl">Renovaciones</div>
+              <div className="list">
+                {renuevan.map((n) => (
+                  <button type="button" key={n.id} className="follow fila-boton" onClick={() => abrir('renewal', { id: n.id })}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <b>{n.name}</b>
+                      <div className="chip">
+                        {TIPOS_RENOVACION[n.type].label} · {c.companies.find((e) => e.id === n.companyId)?.name ?? ''}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
             <button type="button" className="btn sm" onClick={() => abrir('event', { date: sel })}>
               <Icono n="plus" />

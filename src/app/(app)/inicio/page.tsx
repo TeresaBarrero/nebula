@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { CUADRANTES, FASES_ABIERTAS, FASES_OPORTUNIDAD, FASES_PROYECTO } from '@/lib/catalogos/crm';
 import { eur } from '@/lib/reglas/dinero';
-import { diasHasta, lunesDe, relativa, sumarDias } from '@/lib/reglas/fechas';
+import { cifrasFacturas, resumenFiscal } from '@/lib/reglas/facturas';
+import { diasHasta, relativa } from '@/lib/reglas/fechas';
+import { ingresosFijos } from '@/lib/reglas/recurrentes';
 import { empresaDe } from '@/lib/reglas/historial';
 import { cifrasOportunidades, enMarcha } from '@/lib/reglas/proyectos';
 import { leerTareaRapida } from '@/lib/reglas/tareaRapida';
@@ -46,10 +48,9 @@ export default function Inicio() {
     .sort((a, b) => b.value * b.prob - a.value * a.prob)
     .slice(0, 3);
   const fijadas = c.notes.filter((n) => n.pinned);
-  const retrasados = activos.filter((p) => p.end && diasHasta(p.end, hoy) < 0).length;
   const k = cifrasOportunidades(c.deals, hoy);
-  const lunes = lunesDe(hoy);
-  const reunionesSemana = c.events.filter((e) => e.date >= lunes && e.date <= sumarDias(lunes, 6)).length;
+  const kf = cifrasFacturas(c, hoy);
+  const fiscal = resumenFiscal(c, hoy);
 
   return (
     <>
@@ -67,27 +68,33 @@ export default function Inicio() {
       <TareaRapida />
 
       <div className="stats">
-        <Link className="stat lilac" href="/oportunidades">
-          <span className="k">En juego</span>
-          <span className="v num">{eur(k.enJuego)}</span>
-          <span className="s">{plural(k.abiertas, 'oportunidad abierta', 'oportunidades abiertas')}</span>
+        <Link className="stat butter" href="/facturas">
+          <span className="k">Te deben</span>
+          <span className="v num">{eur(kf.teDeben)}</span>
+          <span className="s">{kf.fueraDePlazo ? `${eur(kf.fueraDePlazo)} fuera de plazo` : 'Todo dentro de plazo'}</span>
+        </Link>
+        <Link className="stat lilac" href="/igualas">
+          <span className="k">
+            Igualas al mes <Ayuda k="iguala" />
+          </span>
+          <span className="v num">{eur(ingresosFijos(c.retainers))}</span>
+          <span className="s">{plural(c.retainers.filter((r) => r.active).length, 'cliente con cuota fija', 'clientes con cuota fija')}</span>
+        </Link>
+        <Link className="stat sage" href="/informes">
+          <span className="k">
+            Has ganado este trimestre <Ayuda k="rendimiento" />
+          </span>
+          <span className="v num">{eur(fiscal.rendimiento)}</span>
+          <span className="s">
+            {eur(fiscal.ingresos)} facturado − {eur(fiscal.gastos)} gastos
+          </span>
         </Link>
         <Link className="stat peach" href="/oportunidades">
           <span className="k">
             Lo que probablemente cerrarás <Ayuda k="prevision" />
           </span>
           <span className="v num">{eur(k.ponderado)}</span>
-          <span className="s">Según la probabilidad de cada una</span>
-        </Link>
-        <Link className="stat sage" href="/proyectos">
-          <span className="k">Proyectos en marcha</span>
-          <span className="v num">{activos.length}</span>
-          <span className="s">{retrasados ? plural(retrasados, 'va retrasado', 'van retrasados') : 'Ninguno retrasado'}</span>
-        </Link>
-        <Link className="stat butter" href="/calendario">
-          <span className="k">Reuniones esta semana</span>
-          <span className="v num">{reunionesSemana}</span>
-          <span className="s">De lunes a domingo</span>
+          <span className="s">De {eur(k.enJuego)} en juego</span>
         </Link>
       </div>
 

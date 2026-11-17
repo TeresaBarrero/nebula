@@ -8,7 +8,9 @@ import type { Entregable, EstadoEntregable, Proyecto } from '@/lib/datos/entidad
 import { eur } from '@/lib/reglas/dinero';
 import { fechaCorta, relativa } from '@/lib/reglas/fechas';
 import { empresaDe } from '@/lib/reglas/historial';
+import { dineroProyecto } from '@/lib/reglas/facturas';
 import { faseAlReanudar, progreso } from '@/lib/reglas/proyectos';
+import { CajaFacturas, CajaGastos } from '@/components/dinero/Listas';
 import { porFecha } from '@/lib/reglas/tareas';
 import { tareaNueva, useAccionesCrm } from '@/components/app/acciones';
 import { ahoraISO, nuevoId, useDatos } from '@/components/app/Datos';
@@ -30,6 +32,7 @@ export function PanelProyecto({ p, alCerrar }: { p: Proyecto; alCerrar: () => vo
   const idx = FLUJO.indexOf(p.status);
   const g = progreso(c.tasks, p.id);
   const pausa = p.status === 'pausa';
+  const m = dineroProyecto(c, p.id);
 
   return (
     <Capa alCerrar={alCerrar} className="overlay drawer-ov">
@@ -108,6 +111,22 @@ export function PanelProyecto({ p, alCerrar }: { p: Proyecto; alCerrar: () => vo
               <dd className="num">{eur(p.budget)}</dd>
             </div>
             <div>
+              <dt>Facturado</dt>
+              <dd className="num">{eur(m.facturado)}</dd>
+            </div>
+            <div>
+              <dt>Gastos</dt>
+              <dd className="num">{eur(m.gastos)}</dd>
+            </div>
+            <div>
+              <dt>
+                Te queda <Ayuda k="margen" />
+              </dt>
+              <dd className="num" style={{ color: m.margen < 0 ? 'var(--danger)' : 'var(--ok)' }}>
+                {eur(m.margen)}
+              </dd>
+            </div>
+            <div>
               <dt>Horas previstas</dt>
               <dd className="num">{p.hoursBudget ? `${p.hoursBudget} h` : '—'}</dd>
             </div>
@@ -128,10 +147,12 @@ export function PanelProyecto({ p, alCerrar }: { p: Proyecto; alCerrar: () => vo
           <Entregables p={p} />
           <TareasProyecto p={p} />
           <Equipo p={p} />
+          <CajaFacturas facturas={c.invoices.filter((f) => f.projectId === p.id)} nueva={{ projectId: p.id, contactId: p.contactId, companyId: contacto?.companyId ?? null }} />
+          <CajaGastos gastos={c.expenses.filter((x) => x.projectId === p.id)} nuevo={{ projectId: p.id }} />
           <CajaDocumentos docs={c.files.filter((d) => d.projectId === p.id)} vinculo={{ projectId: p.id, contactId: p.contactId, companyId: contacto?.companyId ?? null }} />
           <SeccionHistorial filtro={{ projectId: p.id }} limite={10} registrar={{ contactId: p.contactId, projectId: p.id }} />
           <p className="foot-note" style={{ marginTop: 0 }}>
-            Facturas y gastos del proyecto llegan en la Fase 2; briefing, rondas de cambios y horas, en la Fase 3; el contrato, en la Fase 4.
+            El briefing, las rondas de cambios, las horas y el € por hora real llegan en la Fase 3; el contrato, en la Fase 4.
           </p>
         </div>
       </aside>

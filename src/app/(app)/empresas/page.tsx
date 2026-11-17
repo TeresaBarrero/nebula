@@ -6,7 +6,12 @@ import { Suspense, useState } from 'react';
 import { FASES_ABIERTAS, FASES_OPORTUNIDAD, FASES_PROYECTO } from '@/lib/catalogos/crm';
 import { DISCIPLINAS } from '@/lib/catalogos/disciplinas';
 import type { Empresa } from '@/lib/datos/entidades';
+import { TIPOS_RENOVACION } from '@/lib/catalogos/dinero';
 import { eur } from '@/lib/reglas/dinero';
+import { dineroEmpresa } from '@/lib/reglas/facturas';
+import { fechaCorta } from '@/lib/reglas/fechas';
+import { estadoRenovacion } from '@/lib/reglas/recurrentes';
+import { CajaFacturas } from '@/components/dinero/Listas';
 import { normalizar } from '@/lib/reglas/textos';
 import { useDatos } from '@/components/app/Datos';
 import { useFormularios } from '@/components/app/formularios/Formulario';
@@ -97,9 +102,12 @@ function Empresas() {
 }
 
 function FichaEmpresa({ x }: { x: Empresa }) {
-  const { c } = useDatos();
+  const { c, hoy } = useDatos();
   const abrir = useFormularios();
   const copiar = useCopiar();
+  const dinero = dineroEmpresa(c, x.id);
+  const igualas = c.retainers.filter((r) => r.companyId === x.id);
+  const renovaciones = c.renewals.filter((n) => n.companyId === x.id).sort((a, b) => a.renewDate.localeCompare(b.renewDate));
   const personas = c.contacts.filter((p) => p.companyId === x.id).sort((a, b) => a.name.localeCompare(b.name, 'es'));
   const ids = new Set(personas.map((p) => p.id));
   const proyectos = c.projects.filter((p) => p.contactId && ids.has(p.contactId));
@@ -169,7 +177,17 @@ function FichaEmpresa({ x }: { x: Empresa }) {
             </div>
           )}
         </dl>
-        <p className="foot-note">«Le has facturado» y «Te debe» aparecerán aquí cuando lleguen las facturas (Fase 2).</p>
+        <p className="foot-note">El portal del cliente, el kit de marca y sus accesos llegan en las Fases 3 y 4.</p>
+          <div>
+            <dt>Le has facturado</dt>
+            <dd className="num">{eur(dinero.facturado)} <span className="muted">sin IVA</span></dd>
+          </div>
+          <div>
+            <dt>Te debe</dt>
+            <dd className="num" style={{ color: dinero.teDebe > 0 ? 'var(--danger)' : 'inherit' }}>
+              {eur(dinero.teDebe)}
+            </dd>
+          </div>
       </section>
 
       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))' }}>
@@ -230,6 +248,44 @@ function FichaEmpresa({ x }: { x: Empresa }) {
             {!proyectos.length && !abiertas.length && <div className="empty">Sin proyectos ni oportunidades abiertas.</div>}
           </div>
         </section>
+        <section className="card">
+          <div className="card-h">
+            <h2>
+              <Icono n="repeat" />
+              Igualas y renovaciones
+            </h2>
+            <button type="button" className="text-link" onClick={() => abrir('retainer', { companyId: x.id, contactId: personas[0]?.id ?? '' })}>
+              + Iguala
+            </button>
+          </div>
+          <div className="list">
+            {igualas.map((r) => (
+              <button type="button" className="follow fila-boton" key={r.id} onClick={() => abrir('retainer', { id: r.id })}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <b>{r.name}</b>
+                  <div className="chip">{r.active ? `Factura el día ${r.billingDay}` : 'Pausada'}</div>
+                </div>
+                <b className="num">{eur(r.fee)}/mes</b>
+              </button>
+            ))}
+            {renovaciones.map((n) => {
+              const st = estadoRenovacion(n, hoy);
+              return (
+                <button type="button" className="follow fila-boton" key={n.id} onClick={() => abrir('renewal', { id: n.id })}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <b>{n.name}</b>
+                    <div className="chip">
+                      {TIPOS_RENOVACION[n.type].label} · renueva el {fechaCorta(n.renewDate)}
+                    </div>
+                  </div>
+                  <Pill cls={st.cls}>{st.label}</Pill>
+                </button>
+              );
+            })}
+            {!igualas.length && !renovaciones.length && <div className="empty">Sin igualas ni renovaciones.</div>}
+          </div>
+        </section>
+        <CajaFacturas facturas={c.invoices.filter((f) => f.companyId === x.id)} nueva={{ companyId: x.id, contactId: personas[0]?.id ?? null }} />
         <CajaDocumentos docs={docs} vinculo={{ companyId: x.id, contactId: null, projectId: null }} />
       </div>
 
