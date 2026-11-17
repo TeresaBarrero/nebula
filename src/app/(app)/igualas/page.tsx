@@ -11,6 +11,8 @@ import { useDatos } from '@/components/app/Datos';
 import { useFormularios } from '@/components/app/formularios/Formulario';
 import { Pill, PillDisciplina } from '@/components/crm/comunes';
 import { useDinero } from '@/components/dinero/Dinero';
+import { horas, horasDeMas, minutosIguala } from '@/lib/reglas/trabajo';
+import { useTrabajo } from '@/components/trabajo/Trabajo';
 import { Ayuda } from '@/components/ui/Ayuda';
 import { Cabecera } from '@/components/ui/Cabecera';
 import { Icono } from '@/components/ui/Icono';
@@ -74,9 +76,9 @@ function Igualas() {
             <span className="s">Activas</span>
           </div>
           <div className="stat peach">
-            <span className="k">Horas incluidas al mes</span>
-            <span className="v num">{activas.reduce((a, r) => a + r.hours, 0)} h</span>
-            <span className="s">Las horas usadas llegan con el cronómetro (Fase 3)</span>
+            <span className="k">Horas este mes</span>
+            <span className="v num">{horas(activas.reduce((a, r) => a + minutosIguala(c, r, hoy), 0))}</span>
+            <span className="s">de {activas.reduce((a, r) => a + r.hours, 0)} h incluidas</span>
           </div>
           <div className={`stat ${porFacturar.length ? 'rose' : 'butter'}`}>
             <span className="k">Por facturar este mes</span>
@@ -199,6 +201,10 @@ function TarjetaIguala({ r }: { r: Iguala }) {
   const empresa = c.companies.find((e) => e.id === r.companyId);
   const mes = nombreMes(hoy);
   const toca = igualaPorFacturar(r, hoy);
+  const trabajo = useTrabajo();
+  const min = minutosIguala(c, r, hoy);
+  const pct = r.hours ? (min / 60 / r.hours) * 100 : 0;
+  const deMas = horasDeMas(c, r, hoy);
   return (
     <article className="r-card">
       <div className="p-top">
@@ -216,12 +222,17 @@ function TarjetaIguala({ r }: { r: Iguala }) {
       </div>
       <div className="p-prog">
         <div className="row">
-          <span>Horas incluidas</span>
-          <span className="num">{r.hours} h al mes</span>
+          <span>Horas de {mes}</span>
+          <span className={`num ${pct > 100 ? 'late' : ''}`}>
+            {horas(min)} de {r.hours} h
+          </span>
+        </div>
+        <div className="progress">
+          <i style={{ width: `${Math.min(100, pct)}%`, background: pct > 100 ? 'var(--danger)' : pct > 85 ? 'var(--peach-strong)' : 'var(--sage-strong)' }} />
         </div>
         <div className="row">
-          <span>Precio por hora si las usa todas</span>
-          <span className="num">{r.hours ? `${eur(r.fee / r.hours)}/h` : '—'}</span>
+          <span>Lo que ganas por hora este mes</span>
+          <span className="num">{min ? `${eur(r.fee / (min / 60))}/h` : '—'}</span>
         </div>
       </div>
       {r.services && (
@@ -242,6 +253,11 @@ function TarjetaIguala({ r }: { r: Iguala }) {
               Facturar {mes}
             </button>
           )
+        )}
+        {deMas > 0 && (
+          <button type="button" className="btn sm" onClick={() => void trabajo.cobrarHorasDeMas(r)}>
+            Cobrar {horas(deMas * 60)} de más
+          </button>
         )}
         <button type="button" className="btn sm ghost" onClick={() => abrir('retainer', { id: r.id })}>
           <Icono n="edit" />

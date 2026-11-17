@@ -7,6 +7,8 @@ import { nombreTrimestre, resumenFiscal } from '@/lib/reglas/facturas';
 import { ingresosYGastos, mejoresClientes, porDisciplina, porProyecto, type Mes } from '@/lib/reglas/informes';
 import { ingresosFijos } from '@/lib/reglas/recurrentes';
 import { useDatos } from '@/components/app/Datos';
+import { useNebula } from '@/components/app/Nebula';
+import { horas } from '@/lib/reglas/trabajo';
 import { Avatar, PillDisciplina } from '@/components/crm/comunes';
 import { Ayuda } from '@/components/ui/Ayuda';
 import { Cabecera } from '@/components/ui/Cabecera';
@@ -14,6 +16,7 @@ import { Cabecera } from '@/components/ui/Cabecera';
 /** Informes: ingresos y gastos, resumen para la gestoría, disciplinas, proyectos y clientes (SPEC §6.15). */
 export default function Informes() {
   const { c, hoy } = useDatos();
+  const { ajustes } = useNebula();
   const meses = ingresosYGastos(c, hoy);
   const ing = meses.reduce((a, m) => a + m.ingresos, 0);
   const gas = meses.reduce((a, m) => a + m.gastos, 0);
@@ -124,23 +127,49 @@ export default function Informes() {
           <div className="card-h">
             <h2>Por disciplina · 6 meses</h2>
           </div>
-          <div className="hbar">
-            {disc.map((d) => (
-              <div className="row" key={d.k} style={{ gridTemplateColumns: '150px 1fr 70px' }}>
-                <span>
-                  <PillDisciplina d={d.k} />
-                </span>
-                <div className="track" role="img" aria-label={`${DISCIPLINAS[d.k].label}: ${eur(d.facturado)}`}>
-                  <i style={{ width: `${(d.facturado / dmax) * 100}%`, background: 'var(--sage-strong)' }} />
-                </div>
-                <b className="num" style={{ textAlign: 'right' }}>
-                  {eur(d.facturado)}
-                </b>
-              </div>
-            ))}
-            {!disc.length && <div className="empty">Aún no hay facturas de proyectos o igualas en estos meses.</div>}
+          <div className="table-wrap">
+            <table style={{ minWidth: 440 }}>
+              <thead>
+                <tr>
+                  <th>Disciplina</th>
+                  <th>Facturado</th>
+                  <th className="amt">Horas</th>
+                  <th className="amt">
+                    € por hora <Ayuda k="eurh" />
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {disc.map((d) => (
+                  <tr key={d.k} style={{ cursor: 'default' }}>
+                    <td>
+                      <PillDisciplina d={d.k} />
+                    </td>
+                    <td>
+                      <div className="track" role="img" aria-label={`${DISCIPLINAS[d.k].label}: ${eur(d.facturado)}`} style={{ height: 8, borderRadius: 5, background: 'var(--mist)', overflow: 'hidden', minWidth: 60 }}>
+                        <i style={{ display: 'block', height: '100%', width: `${(d.facturado / dmax) * 100}%`, background: 'var(--sage-strong)' }} />
+                      </div>
+                      <span className="chip num">{eur(d.facturado)}</span>
+                    </td>
+                    <td className="amt" style={{ fontWeight: 500 }}>
+                      {horas(d.min)}
+                    </td>
+                    <td className="amt" style={{ color: d.eurh && d.eurh < ajustes.rate ? 'var(--danger)' : 'var(--ok)' }}>
+                      {d.eurh ? eur(d.eurh) : '—'}
+                    </td>
+                  </tr>
+                ))}
+                {!disc.length && (
+                  <tr>
+                    <td colSpan={4} className="empty">
+                      Aún no hay facturas ni horas de proyectos o igualas en estos meses.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-          <p className="foot-note">Las horas y lo que ganas por hora en cada disciplina <Ayuda k="eurh" /> llegan con el cronómetro (Fase 3).</p>
+          <p className="foot-note">En rojo, las disciplinas donde ganas menos de tu tarifa ({eur(ajustes.rate)}/h).</p>
         </section>
         <section className="card">
           <div className="card-h">

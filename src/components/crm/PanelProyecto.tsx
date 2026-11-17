@@ -3,10 +3,14 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { DISPONIBILIDAD, ESTADOS_ENTREGABLE, FASES_PROYECTO, FLUJO, PRIORIDADES } from '@/lib/catalogos/crm';
+import { ESTADOS_BRIEF, preguntasBrief } from '@/lib/catalogos/trabajo';
+import { briefDe, duracion, historiaEntregable, horas, horasProyecto, portfolioDe, rondasDe, versionesDe } from '@/lib/reglas/trabajo';
+import { useNebula } from '@/components/app/Nebula';
+import { useTrabajo } from '@/components/trabajo/Trabajo';
 import { PLANTILLAS } from '@/lib/catalogos/plantillas';
-import type { Entregable, EstadoEntregable, Proyecto } from '@/lib/datos/entidades';
+import type { Entregable, Proyecto } from '@/lib/datos/entidades';
 import { eur } from '@/lib/reglas/dinero';
-import { fechaCorta, relativa } from '@/lib/reglas/fechas';
+import { diasHasta, fechaCorta, relativa } from '@/lib/reglas/fechas';
 import { empresaDe } from '@/lib/reglas/historial';
 import { dineroProyecto } from '@/lib/reglas/facturas';
 import { faseAlReanudar, progreso } from '@/lib/reglas/proyectos';
@@ -33,6 +37,8 @@ export function PanelProyecto({ p, alCerrar }: { p: Proyecto; alCerrar: () => vo
   const g = progreso(c.tasks, p.id);
   const pausa = p.status === 'pausa';
   const m = dineroProyecto(c, p.id);
+  const hp = horasProyecto(c, p);
+  const { ajustes } = useNebula();
 
   return (
     <Capa alCerrar={alCerrar} className="overlay drawer-ov">
@@ -127,14 +133,18 @@ export function PanelProyecto({ p, alCerrar }: { p: Proyecto; alCerrar: () => vo
               </dd>
             </div>
             <div>
-              <dt>Horas previstas</dt>
-              <dd className="num">{p.hoursBudget ? `${p.hoursBudget} h` : '—'}</dd>
+              <dt>Horas</dt>
+              <dd className="num" style={{ color: hp.sePasa ? 'var(--danger)' : 'inherit' }}>
+                {horas(hp.min)} de {p.hoursBudget || '—'} h
+              </dd>
             </div>
             <div>
               <dt>
-                Rondas <Ayuda k="rondas" />
+                € por hora <Ayuda k="eurh" />
               </dt>
-              <dd className="num">{p.roundsIncluded} incluidas</dd>
+              <dd className="num" style={{ color: hp.eurh && hp.eurh < ajustes.rate ? 'var(--danger)' : 'inherit' }}>
+                {hp.eurh ? eur(hp.eurh) : '—'}
+              </dd>
             </div>
             <div>
               <dt>Tareas</dt>
@@ -144,15 +154,18 @@ export function PanelProyecto({ p, alCerrar }: { p: Proyecto; alCerrar: () => vo
             </div>
           </dl>
 
+          <SeccionBrief p={p} />
           <Entregables p={p} />
           <TareasProyecto p={p} />
+          <HorasProyecto p={p} />
           <Equipo p={p} />
           <CajaFacturas facturas={c.invoices.filter((f) => f.projectId === p.id)} nueva={{ projectId: p.id, contactId: p.contactId, companyId: contacto?.companyId ?? null }} />
           <CajaGastos gastos={c.expenses.filter((x) => x.projectId === p.id)} nuevo={{ projectId: p.id }} />
           <CajaDocumentos docs={c.files.filter((d) => d.projectId === p.id)} vinculo={{ projectId: p.id, contactId: p.contactId, companyId: contacto?.companyId ?? null }} />
+          {p.status === 'entregado' && <SeccionPortfolio p={p} />}
           <SeccionHistorial filtro={{ projectId: p.id }} limite={10} registrar={{ contactId: p.contactId, projectId: p.id }} />
           <p className="foot-note" style={{ marginTop: 0 }}>
-            El briefing, las rondas de cambios, las horas y el € por hora real llegan en la Fase 3; el contrato, en la Fase 4.
+            El contrato del proyecto y el portal del cliente llegan en la Fase 4.
           </p>
         </div>
       </aside>
@@ -160,24 +173,75 @@ export function PanelProyecto({ p, alCerrar }: { p: Proyecto; alCerrar: () => vo
   );
 }
 
+function SeccionBrief({ p }: { p: Proyecto }) {
+  const { hoy } = useDatos();
+  const t = useTrabajo();
+  const b = briefDe(p);
+  const qs = preguntasBrief(p.discipline);
+  const rellenas = qs.filter(([k]) => b.answers[k]);
+  return (
+    <section className="card">
+      <div className="card-h">
+        <h2>
+          <Icono n="brief" />
+          Briefing
+        </h2>
+        <Pill cls={ESTADOS_BRIEF[b.status].cls}>{ESTADOS_BRIEF[b.status].label}</Pill>
+      </div>
+      {b.status === 'completado' && rellenas.length ? (
+        <>
+          <dl className="info" style={{ gridTemplateColumns: '1fr', marginTop: 0, paddingTop: 0, border: 0 }}>
+            {rellenas.slice(0, 3).map(([k, q]) => (
+              <div key={k}>
+                <dt>{q}</dt>
+                <dd>{b.answers[k]}</dd>
+              </div>
+            ))}
+          </dl>
+          <div className="r-actions">
+            <button type="button" className="btn sm" onClick={() => t.abrirBrief(p)}>
+              <Icono n="eye" />
+              Ver brief completo ({rellenas.length}/{qs.length})
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="muted" style={{ margin: '0 0 10px' }}>
+            {b.status === 'enviado'
+              ? `Se lo enviaste al cliente ${relativa(b.sentDate, hoy).toLowerCase()}. Puedes rellenarlo tú si te lo cuenta en una reunión.`
+              : 'Las preguntas clave antes de empezar: objetivo, público, tono, referencias, entregables…'}
+          </p>
+          <div className="r-actions">
+            <button type="button" className="btn sm primary" onClick={() => t.abrirBrief(p)}>
+              <Icono n="edit" />
+              Rellenar briefing
+            </button>
+            {b.status !== 'enviado' && (
+              <button type="button" className="btn sm" onClick={() => void t.enviarBrief(p)}>
+                <Icono n="send" />
+                Enviárselo al cliente
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 function Entregables({ p }: { p: Proyecto }) {
-  const { c, hoy, crear, actualizar, borrar } = useDatos();
-  const toast = useToast();
+  const { c, crear } = useDatos();
   const [nombre, setNombre] = useState('');
   const lista = c.deliverables.filter((d) => d.projectId === p.id).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
   const anadir = async () => {
     const n = nombre.trim().slice(0, 200);
     if (!n) return;
-    const ok = await crear('deliverables', { id: nuevoId(), projectId: p.id, name: n, status: 'en_curso', sentAt: null, approvedAt: null, billedExtra: 0, createdAt: ahoraISO() });
+    const ok = await crear('deliverables', {
+      id: nuevoId(), projectId: p.id, name: n, status: 'en_curso', sentAt: null, approvedAt: null, billedExtra: 0, versions: [], feedback: [], createdAt: ahoraISO(),
+    });
     if (ok) setNombre('');
-  };
-  const cambiarEstado = async (d: Entregable, status: EstadoEntregable) => {
-    const cambios: Partial<Entregable> = { status };
-    if (status === 'enviado') cambios.sentAt = hoy;
-    if (status === 'aprobado') cambios.approvedAt = hoy;
-    if (status === 'en_curso' || status === 'cambios') cambios.approvedAt = null;
-    if (await actualizar('deliverables', d.id, cambios)) toast(`«${d.name}»: ${ESTADOS_ENTREGABLE[status].label.toLowerCase()}`);
   };
 
   return (
@@ -185,37 +249,13 @@ function Entregables({ p }: { p: Proyecto }) {
       <div className="card-h">
         <h2>
           <Icono n="layers" />
-          Entregables
+          Entregables y revisiones <Ayuda k="rondas" />
         </h2>
+        <span className="chip">{p.roundsIncluded} rondas incluidas</span>
       </div>
       <div className="stack" style={{ gap: 10 }}>
         {lista.map((d) => (
-          <div className="dlv" key={d.id}>
-            <div className="dlv-h">
-              <b>{d.name}</b>
-              <Pill cls={ESTADOS_ENTREGABLE[d.status].cls}>{ESTADOS_ENTREGABLE[d.status].label}</Pill>
-            </div>
-            <div className="dlv-m">
-              {d.status === 'enviado' && d.sentAt && <span className="chip">Enviado {relativa(d.sentAt, hoy).toLowerCase()}</span>}
-              {d.status === 'aprobado' && d.approvedAt && <span className="chip">Aprobado {relativa(d.approvedAt, hoy).toLowerCase()}</span>}
-              <select
-                className="input"
-                style={{ width: 'auto', padding: '4px 8px', fontSize: 12.5 }}
-                value={d.status}
-                aria-label={`Estado de ${d.name}`}
-                onChange={(e) => void cambiarEstado(d, e.target.value as EstadoEntregable)}
-              >
-                {Object.entries(ESTADOS_ENTREGABLE).map(([k, s]) => (
-                  <option key={k} value={k}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-              <button type="button" className="icon-btn" aria-label={`Eliminar ${d.name}`} title="Eliminar" onClick={() => void borrar('deliverables', d.id, 'Entregable eliminado')}>
-                <Icono n="trash" />
-              </button>
-            </div>
-          </div>
+          <BloqueEntregable key={d.id} d={d} p={p} />
         ))}
         {!lista.length && <div className="empty">Añade lo que vas a entregar: wireframes, logotipo, piezas…</div>}
       </div>
@@ -231,6 +271,154 @@ function Entregables({ p }: { p: Proyecto }) {
           <Icono n="plus" />
         </button>
       </form>
+    </section>
+  );
+}
+
+/** Un entregable con su versión, rondas usadas/incluidas y acciones (dlvBlock del prototipo, SPEC §7.7). */
+function BloqueEntregable({ d, p }: { d: Entregable; p: Proyecto }) {
+  const { hoy, borrar } = useDatos();
+  const t = useTrabajo();
+  const r = rondasDe(d, p);
+  const v = versionesDe(d).length;
+  const hist = historiaEntregable(d, p);
+  const espera = d.status === 'enviado' && d.sentAt ? -diasHasta(d.sentAt, hoy) : 0;
+  return (
+    <div className="dlv">
+      <div className="dlv-h">
+        <b>{d.name}</b>
+        <Pill cls={ESTADOS_ENTREGABLE[d.status].cls}>{ESTADOS_ENTREGABLE[d.status].label}</Pill>
+      </div>
+      <div className="dlv-m">
+        <span className="chip">{v ? `Versión ${v}` : 'Aún sin enviar'}</span>
+        <span className={`chip num ${r.extra ? 'late' : ''}`}>
+          Rondas de cambios: {r.usadas} de {r.incluidas}
+        </span>
+        {r.extra > 0 && <Pill cls="rose">{r.extra === 1 ? '1 ronda extra' : `${r.extra} rondas extra`}</Pill>}
+        {espera >= 5 && <span className="chip late">Lleva {espera} días sin respuesta</span>}
+      </div>
+      <div className="r-actions">
+        {d.status !== 'aprobado' && d.status !== 'enviado' && (
+          <button type="button" className="btn sm" onClick={() => void t.enviarVersion(d)}>
+            <Icono n="send" />
+            Enviar versión {v + 1}
+          </button>
+        )}
+        {d.status === 'enviado' && (
+          <>
+            <button type="button" className="btn sm" onClick={() => t.pedirCambios(d)}>
+              <Icono n="talk" />
+              Pide cambios
+            </button>
+            <button type="button" className="btn sm" onClick={() => void t.aprobar(d)}>
+              <Icono n="tick" />
+              Lo aprueba
+            </button>
+          </>
+        )}
+        {r.porCobrar > 0 && (
+          <button type="button" className="btn sm primary" onClick={() => void t.cobrarRondas(d)}>
+            <Icono n="euro" />
+            Cobrar {r.porCobrar === 1 ? '1 ronda extra' : `${r.porCobrar} rondas extra`}
+          </button>
+        )}
+        <button type="button" className="icon-btn" aria-label={`Eliminar ${d.name}`} title="Eliminar" onClick={() => void borrar('deliverables', d.id, 'Entregable eliminado')}>
+          <Icono n="trash" />
+        </button>
+      </div>
+      {hist.length > 0 && (
+        <details className="vers">
+          <summary>Ver historial</summary>
+          {hist.map((h, i) => (
+            <div className="ver" key={i}>
+              <span className="sdot" style={{ background: `var(--${h.cls}-ink)` }} />
+              <span>{h.texto}</span>
+              <span className="chip">{relativa(h.fecha, hoy)}</span>
+            </div>
+          ))}
+        </details>
+      )}
+    </div>
+  );
+}
+
+function HorasProyecto({ p }: { p: Proyecto }) {
+  const { c, hoy } = useDatos();
+  const abrir = useFormularios();
+  const t = useTrabajo();
+  const h = horasProyecto(c, p);
+  const entradas = c.timeEntries.filter((e) => e.projectId === p.id).sort((a, b) => b.date.localeCompare(a.date));
+  return (
+    <section className="card">
+      <div className="card-h">
+        <h2>
+          <Icono n="timer" />
+          Horas
+        </h2>
+        <span className={`chip num ${h.sePasa ? 'late' : ''}`}>
+          {horas(h.min)} de {p.hoursBudget || '—'} h previstas
+        </span>
+      </div>
+      <div className="progress" style={{ marginBottom: 10 }}>
+        <i style={{ width: `${Math.min(100, h.pct)}%`, background: h.sePasa ? 'var(--danger)' : 'var(--sage-strong)' }} />
+      </div>
+      {h.sePasa && (
+        <div className="warn rose" style={{ marginBottom: 10 }}>
+          Has pasado de las horas previstas. Si el cliente ha pedido cosas nuevas, puedes presupuestarlas aparte.
+        </div>
+      )}
+      <div className="list">
+        {entradas.slice(0, 4).map((e) => (
+          <button type="button" key={e.id} className="follow fila-boton" onClick={() => abrir('time', { id: e.id })}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <b>{e.note || 'Trabajo'}</b>
+              <div className="chip">{relativa(e.date, hoy)}</div>
+            </div>
+            <b className="num">{duracion(e.minutes)}</b>
+          </button>
+        ))}
+      </div>
+      <div className="r-actions" style={{ marginTop: 8 }}>
+        <button type="button" className="btn sm primary" onClick={() => void t.iniciar({ projectId: p.id })}>
+          <Icono n="play" />
+          Cronometrar
+        </button>
+        <button type="button" className="btn sm" onClick={() => abrir('time', { projectId: p.id })}>
+          <Icono n="plus" />
+          Apuntar horas
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function SeccionPortfolio({ p }: { p: Proyecto }) {
+  const abrir = useFormularios();
+  const pf = portfolioDe(p);
+  return (
+    <section className="card">
+      <div className="card-h">
+        <h2>
+          <Icono n="star" />
+          Portfolio
+        </h2>
+      </div>
+      {pf.featured ? (
+        <>
+          <p style={{ margin: '0 0 8px' }}>{pf.summary}</p>
+          <Pill cls={pf.permission ? 'sage' : 'rose'}>{pf.permission ? 'Permiso del cliente' : 'Falta el permiso del cliente'}</Pill>
+        </>
+      ) : (
+        <p className="muted" style={{ margin: '0 0 8px' }}>
+          ¿Ha quedado bien? Conviértelo en un caso de éxito para enseñarlo.
+        </p>
+      )}
+      <div className="r-actions" style={{ marginTop: 8 }}>
+        <button type="button" className="btn sm" onClick={() => abrir('case', { id: p.id })}>
+          <Icono n="star" />
+          {pf.featured ? 'Editar caso' : 'Crear caso de éxito'}
+        </button>
+      </div>
     </section>
   );
 }

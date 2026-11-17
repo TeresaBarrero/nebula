@@ -12,6 +12,7 @@ import { dineroEmpresa } from '@/lib/reglas/facturas';
 import { fechaCorta } from '@/lib/reglas/fechas';
 import { estadoRenovacion } from '@/lib/reglas/recurrentes';
 import { CajaFacturas } from '@/components/dinero/Listas';
+import { Accesos, KitDeMarca } from '@/components/crm/MarcaYAccesos';
 import { normalizar } from '@/lib/reglas/textos';
 import { useDatos } from '@/components/app/Datos';
 import { useFormularios } from '@/components/app/formularios/Formulario';
@@ -177,7 +178,7 @@ function FichaEmpresa({ x }: { x: Empresa }) {
             </div>
           )}
         </dl>
-        <p className="foot-note">El portal del cliente, el kit de marca y sus accesos llegan en las Fases 3 y 4.</p>
+        <p className="foot-note">El portal del cliente («Ver su portal») llega en la Fase 4.</p>
           <div>
             <dt>Le has facturado</dt>
             <dd className="num">{eur(dinero.facturado)} <span className="muted">sin IVA</span></dd>
@@ -285,6 +286,8 @@ function FichaEmpresa({ x }: { x: Empresa }) {
             {!igualas.length && !renovaciones.length && <div className="empty">Sin igualas ni renovaciones.</div>}
           </div>
         </section>
+        <KitDeMarca e={x} />
+        <Accesos e={x} />
         <CajaFacturas facturas={c.invoices.filter((f) => f.companyId === x.id)} nueva={{ companyId: x.id, contactId: personas[0]?.id ?? null }} />
         <CajaDocumentos docs={docs} vinculo={{ companyId: x.id, contactId: null, projectId: null }} />
       </div>

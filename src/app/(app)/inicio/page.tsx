@@ -5,10 +5,12 @@ import { useState } from 'react';
 import { CUADRANTES, FASES_ABIERTAS, FASES_OPORTUNIDAD, FASES_PROYECTO } from '@/lib/catalogos/crm';
 import { eur } from '@/lib/reglas/dinero';
 import { cifrasFacturas, resumenFiscal } from '@/lib/reglas/facturas';
-import { diasHasta, relativa } from '@/lib/reglas/fechas';
+import { diasHasta, lunesDe, relativa } from '@/lib/reglas/fechas';
+import { briefDe, horas, minutos } from '@/lib/reglas/trabajo';
+import { CANALES, ESTADOS_PUBLICACION } from '@/lib/catalogos/trabajo';
 import { ingresosFijos } from '@/lib/reglas/recurrentes';
 import { empresaDe } from '@/lib/reglas/historial';
-import { cifrasOportunidades, enMarcha } from '@/lib/reglas/proyectos';
+import { enMarcha } from '@/lib/reglas/proyectos';
 import { leerTareaRapida } from '@/lib/reglas/tareaRapida';
 import { cuadranteDe } from '@/lib/reglas/tareas';
 import { fechaLarga, saludo } from '@/lib/reglas/textos';
@@ -38,17 +40,26 @@ export default function Inicio() {
     .filter((e) => diasHasta(e.date, hoy) >= 0 && diasHasta(e.date, hoy) <= 10)
     .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
     .slice(0, 4);
-  const esperando = c.deliverables
-    .filter((d) => d.status === 'enviado')
-    .map((d) => ({ d, dias: d.sentAt ? -diasHasta(d.sentAt, hoy) : 0, p: c.projects.find((p) => p.id === d.projectId) }))
-    .sort((a, b) => b.dias - a.dias);
+  const esperando = [
+    ...c.deliverables
+      .filter((d) => d.status === 'enviado')
+      .map((d) => ({ clave: d.id, nombre: `${d.name}${d.versions?.length ? ` · v${d.versions.length}` : ''}`, briefing: false, dias: d.sentAt ? -diasHasta(d.sentAt, hoy) : 0, p: c.projects.find((p) => p.id === d.projectId) })),
+    ...c.projects
+      .filter((p) => briefDe(p).status === 'enviado')
+      .map((p) => ({ clave: 'b' + p.id, nombre: 'Briefing', briefing: true, dias: briefDe(p).sentDate ? -diasHasta(briefDe(p).sentDate!, hoy) : 0, p })),
+  ].sort((a, b) => b.dias - a.dias);
+  const lunes = lunesDe(hoy);
+  const minSemana = minutos(c.timeEntries, (e) => e.date >= lunes && e.date <= hoy);
+  const publicaciones = c.posts
+    .filter((p) => diasHasta(p.date, hoy) >= 0 && diasHasta(p.date, hoy) < 7 && p.status !== 'publicado')
+    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
+    .slice(0, 5);
   const activos = c.projects.filter(enMarcha).sort((a, b) => (a.end ?? '9').localeCompare(b.end ?? '9'));
   const probables = c.deals
     .filter((d) => FASES_ABIERTAS.includes(d.stage))
     .sort((a, b) => b.value * b.prob - a.value * a.prob)
     .slice(0, 3);
   const fijadas = c.notes.filter((n) => n.pinned);
-  const k = cifrasOportunidades(c.deals, hoy);
   const kf = cifrasFacturas(c, hoy);
   const fiscal = resumenFiscal(c, hoy);
 
@@ -89,12 +100,10 @@ export default function Inicio() {
             {eur(fiscal.ingresos)} facturado − {eur(fiscal.gastos)} gastos
           </span>
         </Link>
-        <Link className="stat peach" href="/oportunidades">
-          <span className="k">
-            Lo que probablemente cerrarás <Ayuda k="prevision" />
-          </span>
-          <span className="v num">{eur(k.ponderado)}</span>
-          <span className="s">De {eur(k.enJuego)} en juego</span>
+        <Link className="stat peach" href="/horas">
+          <span className="k">Horas esta semana</span>
+          <span className="v num">{horas(minSemana)}</span>
+          <span className="s">Desde el lunes</span>
         </Link>
       </div>
 
@@ -123,16 +132,16 @@ export default function Inicio() {
               </h2>
             </div>
             <p className="muted" style={{ margin: '-4px 0 6px', fontSize: 12.5 }}>
-              Entregables que has enviado y aún no tienen respuesta.
+              Entregables y briefings que has enviado y aún no tienen respuesta.
             </p>
             <div className="list">
-              {esperando.map(({ d, dias, p }) => (
-                <Link key={d.id} className="follow enlace-fila" href={`/proyectos?p=${d.projectId}`}>
-                  <span className="tl-ic butter">
-                    <Icono n="send" />
+              {esperando.map(({ clave, nombre, briefing, dias, p }) => (
+                <Link key={clave} className="follow enlace-fila" href={`/proyectos?p=${p?.id ?? ''}`}>
+                  <span className={`tl-ic ${briefing ? 'lilac' : 'butter'}`}>
+                    <Icono n={briefing ? 'brief' : 'send'} />
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <b>{d.name}</b>
+                    <b>{nombre}</b>
                     <div className="chip">{p?.name}</div>
                   </div>
                   <span className={`chip ${dias >= 5 ? 'late' : ''}`}>{dias ? `hace ${plural(dias, 'día', 'días')}` : 'hoy'}</span>
@@ -191,6 +200,30 @@ export default function Inicio() {
                 <FilaReunion key={e.id} e={e} />
               ))}
               {!proximas.length && <div className="empty">Sin reuniones próximas.</div>}
+            </div>
+          </section>
+          <section className="card">
+            <div className="card-h">
+              <h2>
+                <Icono n="megaphone" />
+                Contenido de esta semana
+              </h2>
+              <Link href="/contenidos">Contenidos</Link>
+            </div>
+            <div className="list">
+              {publicaciones.map((p) => (
+                <button type="button" key={p.id} className="follow fila-boton" onClick={() => abrir('post', { id: p.id })}>
+                  <Pill cls={CANALES[p.channel].cls}>{CANALES[p.channel].label}</Pill>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <b>{p.title}</b>
+                    <div className="chip">
+                      {c.companies.find((e) => e.id === p.companyId)?.name ?? 'Mi marca'} · {relativa(p.date, hoy)}
+                    </div>
+                  </div>
+                  <Pill cls={ESTADOS_PUBLICACION[p.status].cls}>{ESTADOS_PUBLICACION[p.status].label}</Pill>
+                </button>
+              ))}
+              {!publicaciones.length && <div className="empty">No hay publicaciones esta semana.</div>}
             </div>
           </section>
           <section className="card">

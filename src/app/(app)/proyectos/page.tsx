@@ -9,6 +9,7 @@ import { eur } from '@/lib/reglas/dinero';
 import { diasHasta, fechaCorta, relativa } from '@/lib/reglas/fechas';
 import { empresaDe } from '@/lib/reglas/historial';
 import { enMarcha, progreso } from '@/lib/reglas/proyectos';
+import { horas, horasProyecto } from '@/lib/reglas/trabajo';
 import { useDatos } from '@/components/app/Datos';
 import { useFormularios } from '@/components/app/formularios/Formulario';
 import { BarraFases, Pill, PillDisciplina } from '@/components/crm/comunes';
@@ -101,6 +102,7 @@ function TarjetaProyecto({ p, alAbrir }: { p: Proyecto; alAbrir: () => void }) {
   const g = progreso(c.tasks, p.id);
   const retrasado = enMarcha(p) && p.end && diasHasta(p.end, hoy) < 0;
   const esperando = c.deliverables.filter((d) => d.projectId === p.id && d.status === 'enviado').length;
+  const h = horasProyecto(c, p);
   return (
     <button type="button" className="p-card" onClick={alAbrir}>
       <div className="p-top">
@@ -114,9 +116,9 @@ function TarjetaProyecto({ p, alAbrir }: { p: Proyecto; alAbrir: () => void }) {
       </div>
       <BarraFases p={p} />
       <div className="p-meta">
-        <span className="chip">
+        <span className={`chip ${h.sePasa ? 'late' : ''}`}>
           <Icono n="timer" />
-          {p.hoursBudget ? `${p.hoursBudget} h previstas` : 'Sin horas previstas'}
+          {horas(h.min)} de {p.hoursBudget || '—'} h
         </span>
         <span className="chip">
           <Icono n="check" />
@@ -141,7 +143,7 @@ function TarjetaProyecto({ p, alAbrir }: { p: Proyecto; alAbrir: () => void }) {
       <div className="p-foot">
         <div>
           <b className="num">{eur(p.budget)}</b>
-          <div className="chip">Presupuesto sin IVA</div>
+          <div className="chip num">{h.eurh ? `${eur(h.eurh)}/h reales` : 'Sin facturar aún'}</div>
         </div>
         <span className="text-link">Abrir →</span>
       </div>

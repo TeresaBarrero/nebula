@@ -12,6 +12,7 @@ import { ahoraISO, nuevoId, useDatos } from '@/components/app/Datos';
 import { useFormularios } from '@/components/app/formularios/Formulario';
 import { Icono } from '@/components/ui/Icono';
 import { useToast } from '@/components/ui/Toasts';
+import { useTrabajo } from '@/components/trabajo/Trabajo';
 
 export function Pill({ cls, children }: { cls: Pastel | string; children: React.ReactNode }) {
   return <span className={`pill ${cls}`}>{children}</span>;
@@ -69,6 +70,7 @@ export function FilaTarea({ t, sinProyecto, sinContacto, punto, arrastrable }: {
   const b = bloqueante(t, c.tasks);
   const atrasada = !t.done && t.due && diasHasta(t.due, hoy) < 0;
   const q = CUADRANTES[cuadranteDe(t)];
+  const trabajo = useTrabajo();
 
   const marcar = async () => {
     const r = marcarTarea(t, c.tasks, hoy, nuevoId, (f) => fechaCorta(f));
@@ -150,6 +152,20 @@ export function FilaTarea({ t, sinProyecto, sinContacto, punto, arrastrable }: {
           )}
         </div>
       </div>
+      {!t.done && (
+        <button
+          type="button"
+          className="icon-btn play"
+          aria-label={`Cronometrar «${t.title}»`}
+          title="Cronometrar esta tarea"
+          onClick={() => {
+            void trabajo.iniciar({ projectId: t.projectId, taskId: t.id, note: t.title });
+            if (!t.projectId) toast('Tarea sin proyecto: las horas contarán como trabajo interno');
+          }}
+        >
+          <Icono n="play" />
+        </button>
+      )}
       {punto && <span className="qdot" title={q.label} style={{ background: q.dot }} />}
     </div>
   );
