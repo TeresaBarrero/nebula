@@ -196,6 +196,38 @@ isOneToOne: false
       referencedColumns: ["workspace_id","id"]
     }
                   ]
+                },"expenses": {
+                  Row: {
+                    "base": number,"category": string,"concept": string,"contact_id": string | null,"created_at": string,"date": string,"deductible": boolean,"id": string,"iva_pct": number,"project_id": string | null,"receipt_name": string,"receipt_path": string,"supplier": string,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "base"?: number,"category"?: string,"concept": string,"contact_id"?: string | null,"created_at"?: string,"date"?: string,"deductible"?: boolean,"id"?: string,"iva_pct"?: number,"project_id"?: string | null,"receipt_name"?: string,"receipt_path"?: string,"supplier": string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "base"?: number,"category"?: string,"concept"?: string,"contact_id"?: string | null,"created_at"?: string,"date"?: string,"deductible"?: boolean,"id"?: string,"iva_pct"?: number,"project_id"?: string | null,"receipt_name"?: string,"receipt_path"?: string,"supplier"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "expenses_workspace_id_contact_id_fkey"
+      columns: ["workspace_id","contact_id"]
+isOneToOne: false
+      referencedRelation: "contacts"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "expenses_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "expenses_workspace_id_project_id_fkey"
+      columns: ["workspace_id","project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["workspace_id","id"]
+    }
+                  ]
                 },"files": {
                   Row: {
                     "company_id": string | null,"contact_id": string | null,"created_at": string,"date": string,"id": string,"mime": string,"name": string,"project_id": string | null,"size": number,"storage_path": string,"updated_at": string,"workspace_id": string
@@ -231,6 +263,88 @@ isOneToOne: false
       columns: ["workspace_id","project_id"]
 isOneToOne: false
       referencedRelation: "projects"
+      referencedColumns: ["workspace_id","id"]
+    }
+                  ]
+                },"invoice_counters": {
+                  Row: {
+                    "last": number,"series": string,"workspace_id": string,"year": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "last"?: number,"series": string,"workspace_id": string,"year": number
+                  }
+                  Update: {
+                    "last"?: number,"series"?: string,"workspace_id"?: string,"year"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "invoice_counters_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"invoices": {
+                  Row: {
+                    "client": Json | null,"company_id": string | null,"contact_id": string | null,"created_at": string,"date": string,"deal_id": string | null,"due": string | null,"from_quote_id": string | null,"id": string,"irpf": number,"issued_at": string | null,"issuer": Json | null,"iva": number,"kind": string,"lines": NonNullable<Json>,"notes": string,"number": string,"project_id": string | null,"rectifies_id": string | null,"retainer_id": string | null,"series": string,"status": string,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client"?: Json | null,"company_id"?: string | null,"contact_id"?: string | null,"created_at"?: string,"date"?: string,"deal_id"?: string | null,"due"?: string | null,"from_quote_id"?: string | null,"id"?: string,"irpf"?: number,"issued_at"?: string | null,"issuer"?: Json | null,"iva"?: number,"kind": string,"lines"?: NonNullable<Json>,"notes"?: string,"number"?: string,"project_id"?: string | null,"rectifies_id"?: string | null,"retainer_id"?: string | null,"series": string,"status"?: string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "client"?: Json | null,"company_id"?: string | null,"contact_id"?: string | null,"created_at"?: string,"date"?: string,"deal_id"?: string | null,"due"?: string | null,"from_quote_id"?: string | null,"id"?: string,"irpf"?: number,"issued_at"?: string | null,"issuer"?: Json | null,"iva"?: number,"kind"?: string,"lines"?: NonNullable<Json>,"notes"?: string,"number"?: string,"project_id"?: string | null,"rectifies_id"?: string | null,"retainer_id"?: string | null,"series"?: string,"status"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "invoices_workspace_id_company_id_fkey"
+      columns: ["workspace_id","company_id"]
+isOneToOne: false
+      referencedRelation: "companies"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "invoices_workspace_id_contact_id_fkey"
+      columns: ["workspace_id","contact_id"]
+isOneToOne: false
+      referencedRelation: "contacts"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "invoices_workspace_id_deal_id_fkey"
+      columns: ["workspace_id","deal_id"]
+isOneToOne: false
+      referencedRelation: "deals"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "invoices_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "invoices_workspace_id_from_quote_id_fkey"
+      columns: ["workspace_id","from_quote_id"]
+isOneToOne: false
+      referencedRelation: "invoices"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "invoices_workspace_id_project_id_fkey"
+      columns: ["workspace_id","project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "invoices_workspace_id_rectifies_id_fkey"
+      columns: ["workspace_id","rectifies_id"]
+isOneToOne: false
+      referencedRelation: "invoices"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "invoices_workspace_id_retainer_id_fkey"
+      columns: ["workspace_id","retainer_id"]
+isOneToOne: false
+      referencedRelation: "retainers"
       referencedColumns: ["workspace_id","id"]
     }
                   ]
@@ -284,6 +398,32 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "workspaces"
       referencedColumns: ["id"]
+    }
+                  ]
+                },"payments": {
+                  Row: {
+                    "amount": number,"created_at": string,"date": string,"id": string,"invoice_id": string,"method": string,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount": number,"created_at"?: string,"date"?: string,"id"?: string,"invoice_id": string,"method"?: string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "amount"?: number,"created_at"?: string,"date"?: string,"id"?: string,"invoice_id"?: string,"method"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "payments_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "payments_workspace_id_invoice_id_fkey"
+      columns: ["workspace_id","invoice_id"]
+isOneToOne: false
+      referencedRelation: "invoices"
+      referencedColumns: ["workspace_id","id"]
     }
                   ]
                 },"profiles": {
@@ -352,6 +492,64 @@ isOneToOne: false
       referencedColumns: ["workspace_id","id"]
     },{
       foreignKeyName: "projects_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"renewals": {
+                  Row: {
+                    "company_id": string | null,"cost": number,"created_at": string,"id": string,"name": string,"price": number,"provider": string,"renew_date": string,"type": string,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_id"?: string | null,"cost"?: number,"created_at"?: string,"id"?: string,"name": string,"price"?: number,"provider"?: string,"renew_date": string,"type"?: string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "company_id"?: string | null,"cost"?: number,"created_at"?: string,"id"?: string,"name"?: string,"price"?: number,"provider"?: string,"renew_date"?: string,"type"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "renewals_workspace_id_company_id_fkey"
+      columns: ["workspace_id","company_id"]
+isOneToOne: false
+      referencedRelation: "companies"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "renewals_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"retainers": {
+                  Row: {
+                    "active": boolean,"billing_day": number,"company_id": string | null,"contact_id": string | null,"created_at": string,"discipline": string | null,"extra_billed": string,"fee": number,"hours": number,"id": string,"last_billed": string,"name": string,"services": string,"start": string | null,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active"?: boolean,"billing_day"?: number,"company_id"?: string | null,"contact_id"?: string | null,"created_at"?: string,"discipline"?: string | null,"extra_billed"?: string,"fee"?: number,"hours"?: number,"id"?: string,"last_billed"?: string,"name": string,"services"?: string,"start"?: string | null,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "active"?: boolean,"billing_day"?: number,"company_id"?: string | null,"contact_id"?: string | null,"created_at"?: string,"discipline"?: string | null,"extra_billed"?: string,"fee"?: number,"hours"?: number,"id"?: string,"last_billed"?: string,"name"?: string,"services"?: string,"start"?: string | null,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "retainers_workspace_id_company_id_fkey"
+      columns: ["workspace_id","company_id"]
+isOneToOne: false
+      referencedRelation: "companies"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "retainers_workspace_id_contact_id_fkey"
+      columns: ["workspace_id","contact_id"]
+isOneToOne: false
+      referencedRelation: "contacts"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "retainers_workspace_id_fkey"
       columns: ["workspace_id"]
 isOneToOne: false
       referencedRelation: "workspaces"
@@ -473,6 +671,39 @@ isOneToOne: true
 "admin_set_status":
 { Args: { "new_status": string,"target": string }; Returns: undefined
                            },
+"emitir_documento":
+{ Args: { "p_id": string }; Returns: {
+              "client": Json | null,
+"company_id": string | null,
+"contact_id": string | null,
+"created_at": string,
+"date": string,
+"deal_id": string | null,
+"due": string | null,
+"from_quote_id": string | null,
+"id": string,
+"irpf": number,
+"issued_at": string | null,
+"issuer": Json | null,
+"iva": number,
+"kind": string,
+"lines": NonNullable<Json>,
+"notes": string,
+"number": string,
+"project_id": string | null,
+"rectifies_id": string | null,
+"retainer_id": string | null,
+"series": string,
+"status": string,
+"updated_at": string,
+"workspace_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "invoices"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "espacio_de_ruta":
 { Args: { "ruta": string }; Returns: string
                            },
