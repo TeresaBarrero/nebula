@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { FASES_ABIERTAS } from '@/lib/catalogos/crm';
 import { NAV } from '@/lib/catalogos/nav';
 import { iniciales } from '@/lib/reglas/textos';
 import { Icono } from '@/components/ui/Icono';
+import { useDatos } from './Datos';
 import { useNebula } from './Nebula';
 
 /** Barra lateral salvia plegable (SPEC §3). En móvil es un cajón que abre ☰. */
@@ -12,8 +14,13 @@ export function BarraLateral({ alNavegar }: { alNavegar: () => void }) {
   const ruta = usePathname();
   const { perfil, ajustes, cambiarCompacto } = useNebula();
   const activa = (id: string) => ruta === `/${id}` || ruta.startsWith(`/${id}/`);
-  // Los avisos de cada sección (punto melocotón) llegan con sus datos en las próximas fases.
-  const insignias: Record<string, number> = {};
+  const { c, hoy } = useDatos();
+  // Pendientes de cada sección (punto melocotón cuando el menú está plegado). Las de Dinero llegan en la Fase 2.
+  const insignias: Record<string, number> = {
+    tareas: c.tasks.filter((t) => !t.done && t.due && t.due <= hoy).length,
+    calendario: c.events.filter((e) => e.date === hoy).length,
+    oportunidades: c.deals.filter((d) => FASES_ABIERTAS.includes(d.stage) && d.expected && d.expected < hoy).length,
+  };
 
   return (
     <aside className="side" id="side" aria-label="Navegación principal">
@@ -51,7 +58,11 @@ export function BarraLateral({ alNavegar }: { alNavegar: () => void }) {
             >
               <Icono n={n.icon} />
               <span className="lbl">{n.label}</span>
-              {insignias[n.id] ? <span className="badge">{insignias[n.id]}</span> : null}
+              {insignias[n.id] ? (
+                <span className="badge" aria-label={`${insignias[n.id]} pendientes`}>
+                  {insignias[n.id]}
+                </span>
+              ) : null}
             </Link>
           ),
         )}

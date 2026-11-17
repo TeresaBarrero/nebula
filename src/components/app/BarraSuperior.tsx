@@ -5,6 +5,7 @@ import { useSyncExternalStore } from 'react';
 import { Icono } from '@/components/ui/Icono';
 import { Ayuda } from '@/components/ui/Ayuda';
 import { useToast } from '@/components/ui/Toasts';
+import { useAvisos } from './Avisos';
 import { useNebula } from './Nebula';
 
 const OSCURO = '(prefers-color-scheme: dark)';
@@ -27,6 +28,7 @@ export function BarraSuperior({
 }) {
   const { modo, perfil, cambiarTema } = useNebula();
   const toast = useToast();
+  const { pendientes } = useAvisos();
   const sistemaOscuro = useSyncExternalStore(suscribirTemaSistema, () => matchMedia(OSCURO).matches, () => false);
   const oscuro = perfil.prefs.theme === 'dark' || (perfil.prefs.theme === 'system' && sistemaOscuro);
   const mac = useSyncExternalStore(sinCambios, () => /Mac|iPhone|iPad/.test(navigator.userAgent), () => true);
@@ -72,8 +74,20 @@ export function BarraSuperior({
       >
         <Icono n={oscuro ? 'sun' : 'moon'} />
       </button>
-      <button type="button" className="icon-btn" id="bellBtn" onClick={alternarAvisos} aria-label="Avisos">
+      <button
+        type="button"
+        className="icon-btn"
+        id="bellBtn"
+        onClick={alternarAvisos}
+        aria-label={pendientes ? `Avisos: ${pendientes} sin leer` : 'Avisos'}
+        style={{ position: 'relative' }}
+      >
         <Icono n="bell" />
+        {pendientes > 0 && (
+          <span className="dot-count num" aria-hidden="true">
+            {pendientes > 99 ? '99+' : pendientes}
+          </span>
+        )}
       </button>
     </header>
   );

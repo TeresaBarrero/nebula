@@ -12,7 +12,7 @@ const OPCIONES: [string, NombreIcono, string, number, TipoForm?][] = [
   ['Nota', 'note', 'butter', 1, 'note'],
   ['Gasto', 'wallet', 'peach', 2],
   ['Factura', 'receipt', 'sand', 2],
-  ['Proyecto', 'folder', 'butter', 1],
+  ['Proyecto', 'folder', 'butter', 1, 'project'],
   ['Oportunidad', 'funnel', 'lilac', 1, 'deal'],
   ['Contacto', 'users', 'sage', 1, 'contact'],
   ['Apuntar horas', 'timer', 'sage', 3],
