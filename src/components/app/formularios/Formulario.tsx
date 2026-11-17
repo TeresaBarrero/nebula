@@ -2,10 +2,13 @@
 
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 import { FASES_OPORTUNIDAD } from '@/lib/catalogos/crm';
-import type { FaseOportunidad, NombreColeccion } from '@/lib/datos/entidades';
+import { PLANTILLAS, esPlantilla } from '@/lib/catalogos/plantillas';
+import type { FaseOportunidad, NombreColeccion, Oportunidad, Proyecto } from '@/lib/datos/entidades';
+import { sumarDias } from '@/lib/reglas/fechas';
 import { Icono } from '@/components/ui/Icono';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toasts';
+import { useAccionesCrm } from '../acciones';
 import { ahoraISO, nuevoId, useDatos } from '../Datos';
 import { aEntidad, aValores, porDefecto } from './conversion';
 import { DEFINICIONES, opcionesDe, type Campo, type TipoForm, type Valores } from './definiciones';
@@ -30,6 +33,7 @@ export function ProveedorFormularios({ children }: { children: ReactNode }) {
 function Formulario({ tipo, datos, alCerrar }: { tipo: TipoForm; datos: Record<string, unknown>; alCerrar: () => void }) {
   const { c, hoy, crear, actualizar, borrar } = useDatos();
   const toast = useToast();
+  const { ponerPlantilla, mover } = useAccionesCrm();
   const def = DEFINICIONES[tipo];
   const filas = c[def.col] as unknown as Record<string, unknown>[];
   const previo = typeof datos.id === 'string' ? (filas.find((f) => f.id === datos.id) ?? null) : null;
@@ -46,10 +50,18 @@ function Formulario({ tipo, datos, alCerrar }: { tipo: TipoForm; datos: Record<s
       if (tipo === 'deal' && k === 'contactId' && x && !ant.companyId) n.companyId = c.contacts.find((p) => p.id === x)?.companyId ?? '';
       if (tipo === 'deal' && k === 'companyId' && ant.contactId && c.contacts.find((p) => p.id === ant.contactId)?.companyId !== x) n.contactId = '';
       if (tipo === 'contact' && k === 'consent' && x === true && !ant.consentDate) n.consentDate = hoy;
-      return n;
+      // Al elegir plantilla se rellenan disciplina, horas, rondas y entrega (como el prototipo).
+      if (tipo === 'project' && k === 'template' && esPlantilla(x)) {
+        const T = PLANTILLAS[x];
+        n.discipline = T.discipline;
+        n.hoursBudget = String(T.hours);
+        n.roundsIncluded = String(T.rounds);
+        const inicio = String(ant.start || hoy);
+        n.end = sumarDias(inicio, Math.max(30, Math.max(...T.tasks.map((t) => t[2])) + 5));
+      }      return n;
     });
 
-  const visibles = def.campos.filter((f) => !f.visible || f.visible(v));
+  const visibles = def.campos.filter((f) => (!f.visible || f.visible(v)) && !(previo && 'soloNuevo' in f && f.soloNuevo));
   const normales = visibles.filter((f) => !('avanzado' in f && f.avanzado));
   const avanzados = visibles.filter((f) => 'avanzado' in f && f.avanzado);
 
@@ -66,9 +78,23 @@ function Formulario({ tipo, datos, alCerrar }: { tipo: TipoForm; datos: Record<s
     const fila = aEntidad(tipo, v, { id, createdAt: (previo?.createdAt as string) ?? ahoraISO(), hoy }, previo);
     const col = def.col as NombreColeccion;
     const ok = previo ? await actualizar(col, id, fila as never) : await crear(col, fila as never);
-    if (ok) {
-      alCerrar();
-      toast(def.guardado);
+    if (!ok) return;
+    alCerrar();
+    if (tipo === 'project' && !previo) {
+      const p = fila as Proyecto;
+      const comentario = String(v.comment ?? '').trim();
+      if (comentario)
+        await crear('activities', { id: nuevoId(), type: 'nota', text: comentario.slice(0, 5000), date: hoy, contactId: p.contactId, projectId: p.id, createdAt: ahoraISO() });
+      const conPlantilla = esPlantilla(v.template) && (await ponerPlantilla(p, String(v.template)));
+      toast(conPlantilla ? 'Proyecto creado con sus fases, tareas y entregables' : 'Proyecto creado');
+      return;
+    }
+    toast(def.guardado);
+    if (tipo === 'deal') {
+      const d = fila as Oportunidad;
+      const antes = previo as Oportunidad | null;
+      // Ganar o perder desde el formulario provoca lo mismo que arrastrarla en el tablero.
+      if ((antes?.stage ?? 'nuevo') !== d.stage || (d.stage === 'ganado' && !d.projectId)) await mover(d, d.stage, true);
     }
   };
 

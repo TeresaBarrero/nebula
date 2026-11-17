@@ -4,17 +4,20 @@ import {
   DISPONIBILIDAD,
   ESTADOS_CONTACTO,
   FASES_OPORTUNIDAD,
+  FASES_PROYECTO,
   FUENTES,
   MOTIVOS_PERDIDA,
   NOMBRE_COLOR,
+  PRIORIDADES,
   TIPOS_CONTACTO,
   VIAS_PERMISO,
   type Pastel,
 } from '@/lib/catalogos/crm';
 import type { Colecciones, NombreColeccion } from '@/lib/datos/entidades';
+import { PLANTILLAS } from '@/lib/catalogos/plantillas';
 import { REPETICIONES } from '@/lib/reglas/tareas';
 
-export type TipoForm = 'contact' | 'company' | 'deal' | 'task' | 'event' | 'note';
+export type TipoForm = 'contact' | 'company' | 'deal' | 'project' | 'task' | 'event' | 'note';
 
 export type Valores = Record<string, string | boolean>;
 
@@ -29,6 +32,8 @@ export type Campo =
       req?: boolean;
       full?: boolean;
       avanzado?: boolean;
+      /** Solo al crear (p. ej. el comentario inicial). */
+      soloNuevo?: boolean;
       visible?: (v: Valores) => boolean;
       max?: number;
     }
@@ -39,6 +44,7 @@ export type Campo =
       opciones: Opcion[];
       full?: boolean;
       avanzado?: boolean;
+      soloNuevo?: boolean;
       visible?: (v: Valores) => boolean;
     }
   | {
@@ -130,6 +136,38 @@ export const DEFINICIONES: Record<TipoForm, Definicion> = {
       { tipo: 'selectv', k: 'source', label: '¿Cómo te encontró?', opciones: lista(FUENTES, '—') },
       { tipo: 'selectv', k: 'lostReason', label: '¿Por qué se ha perdido?', opciones: lista(MOTIVOS_PERDIDA, '—'), visible: (v) => v.stage === 'perdido' },
       { tipo: 'textarea', k: 'notes', label: 'Notas', full: true, max: 5000 },
+    ],
+  },
+  project: {
+    col: 'projects',
+    nuevo: 'Nuevo proyecto',
+    editar: 'Editar proyecto',
+    guardado: 'Proyecto guardado',
+    borrado: 'Proyecto eliminado',
+    campos: [
+      { tipo: 'seccion', label: 'Lo básico' },
+      { tipo: 'text', k: 'name', label: 'Nombre del proyecto', req: true, full: true, max: 200 },
+      { tipo: 'select', k: 'contactId', label: 'Cliente', de: 'contacts', filtro: (c) => c.type !== 'Colaborador' },
+      { tipo: 'selectv', k: 'discipline', label: 'Disciplina', opciones: disciplinas('Sin disciplina') },
+      {
+        tipo: 'selectv',
+        k: 'template',
+        label: 'Plantilla (crea fases, tareas y entregables)',
+        full: true,
+        soloNuevo: true,
+        opciones: [{ v: '', label: 'Sin plantilla' }, ...Object.entries(PLANTILLAS).map(([v, t]) => ({ v, label: `${t.label} · ${t.tasks.length} tareas, ${t.hours} h` }))],
+      },
+      { tipo: 'date', k: 'start', label: 'Empieza' },
+      { tipo: 'date', k: 'end', label: 'Entrega' },
+      { tipo: 'pills', k: 'status', label: 'Fase', opciones: op(FASES_PROYECTO), full: true },
+      { tipo: 'pills', k: 'priority', label: 'Prioridad', opciones: op(PRIORIDADES), full: true },
+      { tipo: 'textarea', k: 'description', label: 'Descripción', full: true, max: 5000 },
+      { tipo: 'seccion', label: 'Presupuesto y límites' },
+      { tipo: 'number', k: 'budget', label: 'Presupuesto (€, sin IVA)' },
+      { tipo: 'number', k: 'hoursBudget', label: 'Horas previstas' },
+      { tipo: 'number', k: 'roundsIncluded', label: 'Rondas de cambios incluidas' },
+      { tipo: 'text', k: 'tags', label: 'Etiquetas (separadas por comas)', max: 300 },
+      { tipo: 'textarea', k: 'comment', label: 'Comentario inicial (va al historial)', full: true, soloNuevo: true, max: 5000 },
     ],
   },
   task: {

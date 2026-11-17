@@ -1,13 +1,18 @@
 import { esDisciplina } from '@/lib/catalogos/disciplinas';
-import { FASES_OPORTUNIDAD } from '@/lib/catalogos/crm';
+import { FASES_OPORTUNIDAD, FASES_PROYECTO, PRIORIDADES } from '@/lib/catalogos/crm';
+import { PLANTILLAS, esPlantilla } from '@/lib/catalogos/plantillas';
+import { sumarDias } from '@/lib/reglas/fechas';
 import type {
   Contacto,
   Disponibilidad,
   Empresa,
   EstadoContacto,
   FaseOportunidad,
+  FaseProyecto,
   Nota,
   Oportunidad,
+  Prioridad,
+  Proyecto,
   Repeticion,
   Reunion,
   Tarea,
@@ -16,7 +21,7 @@ import type {
 } from '@/lib/datos/entidades';
 import type { TipoForm, Valores } from './definiciones';
 
-type Entidad = Empresa | Contacto | Oportunidad | Tarea | Reunion | Nota;
+type Entidad = Empresa | Contacto | Oportunidad | Proyecto | Tarea | Reunion | Nota;
 
 const s = (v: Valores, k: string, max = 5000) => String(v[k] ?? '').trim().slice(0, max);
 const n = (v: Valores, k: string, def = 0, min = 0, max = 1e9) => {
@@ -51,6 +56,8 @@ export function porDefecto(tipo: TipoForm, hoy: string): Record<string, unknown>
       return { isPrivate: false };
     case 'deal':
       return { stage: 'nuevo', prob: 10, value: '' };
+    case 'project':
+      return { start: hoy, end: sumarDias(hoy, 45), status: 'briefing', priority: 'media', template: '', roundsIncluded: 2 };
     case 'task':
       return { urgent: false, important: true, estimate: 2, repeat: '' };
     case 'event':
@@ -120,6 +127,29 @@ export function aEntidad(tipo: TipoForm, v: Valores, base: { id: string; created
         projectId: antes?.projectId ?? null,
         closedAt: cerrada ? (antes?.stage === stage && antes.closedAt ? antes.closedAt : base.hoy) : null,
       } satisfies Oportunidad;
+    }
+    case 'project': {
+      const antes = previo as Partial<Proyecto> | null;
+      const T = !antes && esPlantilla(v.template) ? PLANTILLAS[v.template] : null;
+      const status = (Object.hasOwn(FASES_PROYECTO, s(v, 'status')) ? s(v, 'status') : 'briefing') as FaseProyecto;
+      return {
+        ...comun,
+        name: s(v, 'name', 200),
+        contactId: nulo(v, 'contactId'),
+        discipline: esDisciplina(v.discipline) ? v.discipline : (T?.discipline ?? null),
+        start: nulo(v, 'start'),
+        end: nulo(v, 'end'),
+        status,
+        // Al pausar desde el formulario se recuerda la fase en la que estaba.
+        prevStatus: status === 'pausa' ? (antes?.status && antes.status !== 'pausa' ? antes.status : (antes?.prevStatus ?? null)) : null,
+        priority: (Object.hasOwn(PRIORIDADES, s(v, 'priority')) ? s(v, 'priority') : 'media') as Prioridad,
+        budget: n(v, 'budget', 0, 0, 1e10),
+        hoursBudget: n(v, 'hoursBudget', T?.hours ?? 0, 0, 100000),
+        roundsIncluded: Math.round(n(v, 'roundsIncluded', T?.rounds ?? 2, 0, 50)),
+        description: s(v, 'description'),
+        tags: s(v, 'tags', 300).split(',').map((t) => t.trim()).filter(Boolean),
+        collaborators: antes?.collaborators ?? [],
+      } satisfies Proyecto;
     }
     case 'task': {
       const antes = previo as Partial<Tarea> | null;

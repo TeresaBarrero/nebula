@@ -12,7 +12,7 @@ import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toasts';
 
 /** Historial unificado con registro rápido (nota, llamada, email, reunión). SPEC §6.4 y §7.11. */
-export function SeccionHistorial({ filtro, titulo = 'Historial', limite = 14, registrar }: { filtro: Filtro; titulo?: string; limite?: number; registrar?: { contactId: string } }) {
+export function SeccionHistorial({ filtro, titulo = 'Historial', limite = 14, registrar }: { filtro: Filtro; titulo?: string; limite?: number; registrar?: { contactId: string | null; projectId?: string } }) {
   const { c, hoy, crear } = useDatos();
   const toast = useToast();
   const [tipo, setTipo] = useState<TipoApunte>('llamada');
@@ -24,8 +24,8 @@ export function SeccionHistorial({ filtro, titulo = 'Historial', limite = 14, re
     const t = texto.trim();
     if (!t || !registrar) return;
     // Se vincula al proyecto en marcha de esa persona, si lo hay (como el prototipo).
-    const p = c.projects.find((x) => x.contactId === registrar.contactId && !['entregado', 'pausa'].includes(x.status));
-    const ok = await crear('activities', { id: nuevoId(), type: tipo, text: t.slice(0, 5000), date: hoy, contactId: registrar.contactId, projectId: p?.id ?? null, createdAt: ahoraISO() });
+    const p = registrar.projectId ?? c.projects.find((x) => x.contactId === registrar.contactId && !['entregado', 'pausa'].includes(x.status))?.id;
+    const ok = await crear('activities', { id: nuevoId(), type: tipo, text: t.slice(0, 5000), date: hoy, contactId: registrar.contactId, projectId: p ?? null, createdAt: ahoraISO() });
     if (ok) {
       setTexto('');
       toast('Apuntado en el historial');

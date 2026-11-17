@@ -3,6 +3,9 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
+/** Capas abiertas, de abajo arriba: solo la de arriba atiende Esc y Tab (p. ej. un formulario sobre el panel de un proyecto). */
+const pila: object[] = [];
+
 const ENFOCABLES = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
 /**
@@ -29,12 +32,15 @@ export function Capa({
   });
 
   useEffect(() => {
+    const yo = {};
+    pila.push(yo);
     const previo = document.activeElement as HTMLElement | null;
     const el = ref.current;
     const primero = el?.querySelector<HTMLElement>('[data-autofocus]') ?? el?.querySelector<HTMLElement>(ENFOCABLES);
     primero?.focus();
 
     const tecla = (e: KeyboardEvent) => {
+      if (pila[pila.length - 1] !== yo) return;
       if (e.key === 'Escape' && cerrar.current) {
         e.stopPropagation();
         cerrar.current();
@@ -55,6 +61,7 @@ export function Capa({
     document.addEventListener('keydown', tecla, true);
     return () => {
       document.removeEventListener('keydown', tecla, true);
+      pila.splice(pila.indexOf(yo), 1);
       if (previo && document.contains(previo)) previo.focus();
     };
   }, []);
