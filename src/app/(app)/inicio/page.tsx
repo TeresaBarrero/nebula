@@ -1,110 +1,299 @@
 'use client';
 
 import Link from 'next/link';
-import { SECCIONES } from '@/lib/catalogos/nav';
+import { useState } from 'react';
+import { CUADRANTES, FASES_ABIERTAS, FASES_OPORTUNIDAD, FASES_PROYECTO } from '@/lib/catalogos/crm';
+import { eur } from '@/lib/reglas/dinero';
+import { diasHasta, lunesDe, relativa, sumarDias } from '@/lib/reglas/fechas';
+import { empresaDe } from '@/lib/reglas/historial';
+import { cifrasOportunidades, enMarcha } from '@/lib/reglas/proyectos';
+import { leerTareaRapida } from '@/lib/reglas/tareaRapida';
+import { cuadranteDe } from '@/lib/reglas/tareas';
 import { fechaLarga, saludo } from '@/lib/reglas/textos';
+import { tareaNueva } from '@/components/app/acciones';
+import { useDatos } from '@/components/app/Datos';
+import { useFormularios } from '@/components/app/formularios/Formulario';
 import { useNebula } from '@/components/app/Nebula';
+import { BarraFases, FilaTarea, Pill } from '@/components/crm/comunes';
+import { FilaReunion } from '@/components/crm/FilaReunion';
+import { Ayuda } from '@/components/ui/Ayuda';
 import { Cabecera } from '@/components/ui/Cabecera';
 import { Icono } from '@/components/ui/Icono';
+import { useToast } from '@/components/ui/Toasts';
 
-const FASES: [number, string, string][] = [
-  [1, 'Núcleo CRM', 'Empresas, contactos, oportunidades, proyectos, tareas, calendario, notas, buscador y avisos.'],
-  [2, 'Dinero', 'Presupuestos, facturas con numeración y PDF, gastos, igualas, renovaciones e informes.'],
-  [3, 'Trabajo creativo', 'Briefing, entregables y rondas, horas y cronómetro, carga de trabajo, contenidos y colaboradores.'],
-  [4, 'Cliente', 'Portal del cliente, contratos con firma, cobros online, formulario web, reservas y automatizaciones.'],
-  [5, 'Integraciones y cierre', 'Gmail, Outlook, Google Calendar, protección de datos, modo sin conexión y Verifactu.'],
-];
+const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
 
+/** Inicio: saludo, tarea rápida y lo importante del día (SPEC §6.2). */
 export default function Inicio() {
-  const { perfil, modo } = useNebula();
+  const { perfil } = useNebula();
+  const { c, hoy } = useDatos();
+  const abrir = useFormularios();
   const ahora = new Date();
-  const fechaTexto = fechaLarga(ahora);
+
+  const paraHoy = c.tasks.filter((t) => !t.done && t.due && t.due <= hoy).sort((a, b) => (a.due ?? '').localeCompare(b.due ?? ''));
+  const reunionesHoy = c.events.filter((e) => e.date === hoy);
+  const proximas = c.events
+    .filter((e) => diasHasta(e.date, hoy) >= 0 && diasHasta(e.date, hoy) <= 10)
+    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
+    .slice(0, 4);
+  const esperando = c.deliverables
+    .filter((d) => d.status === 'enviado')
+    .map((d) => ({ d, dias: d.sentAt ? -diasHasta(d.sentAt, hoy) : 0, p: c.projects.find((p) => p.id === d.projectId) }))
+    .sort((a, b) => b.dias - a.dias);
+  const activos = c.projects.filter(enMarcha).sort((a, b) => (a.end ?? '9').localeCompare(b.end ?? '9'));
+  const probables = c.deals
+    .filter((d) => FASES_ABIERTAS.includes(d.stage))
+    .sort((a, b) => b.value * b.prob - a.value * a.prob)
+    .slice(0, 3);
+  const fijadas = c.notes.filter((n) => n.pinned);
+  const retrasados = activos.filter((p) => p.end && diasHasta(p.end, hoy) < 0).length;
+  const k = cifrasOportunidades(c.deals, hoy);
+  const lunes = lunesDe(hoy);
+  const reunionesSemana = c.events.filter((e) => e.date >= lunes && e.date <= sumarDias(lunes, 6)).length;
 
   return (
     <>
-      <Cabecera antetitulo={fechaTexto} titulo={`${saludo(ahora.getHours())}, ${perfil.name || 'hola'}`} className="hello">
-        {modo === 'demo'
-          ? 'Estás probando nebúla. Puedes tocarlo todo: tus cambios solo se guardan en este navegador.'
-          : 'Esta es la base de nebúla. Las secciones se irán activando fase a fase.'}
+      <Cabecera antetitulo={fechaLarga(ahora)} titulo={`${saludo(ahora.getHours())}, ${perfil.name || 'hola'}`} className="hello">
+        Tienes <b>{plural(paraHoy.length, 'tarea', 'tareas')}</b> para hoy, <b>{plural(reunionesHoy.length, 'reunión', 'reuniones')}</b>
+        {esperando.length > 0 && (
+          <>
+            {' '}
+            y <b>{esperando.length}</b> {esperando.length === 1 ? 'cosa esperando' : 'cosas esperando'} respuesta del cliente
+          </>
+        )}
+        .
       </Cabecera>
 
-      <div className="grid g-home">
-        <section className="card">
-          <div className="card-h">
-            <h2>
-              <Icono n="layers" />
-              Lo que llega a nebúla
-            </h2>
-          </div>
-          <div className="list">
-            {FASES.map(([n, t, d]) => (
-              <div className="follow" key={n}>
-                <span className={`tl-ic ${n === 1 ? 'peach' : 'mist'}`}>
-                  <b className="num">{n}</b>
-                </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <b>
-                    Fase {n} · {t}
-                  </b>
-                  <div className="chip" style={{ whiteSpace: 'normal' }}>
-                    {d}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+      <TareaRapida />
 
-        <section className="card">
-          <div className="card-h">
-            <h2>
-              <Icono n="spark" />
-              Ya puedes
-            </h2>
-          </div>
-          <div className="list">
-            <Link href="/perfil" className="follow enlace-fila">
-              <span className="tl-ic sage">
-                <Icono n="user" />
-              </span>
-              <div style={{ flex: 1 }}>
-                <b>Revisar tu perfil</b>
-                <div className="chip">Tus datos, cómo facturas y tus preferencias</div>
-              </div>
-              <Icono n="right" />
-            </Link>
-            <div className="follow">
-              <span className="tl-ic lilac">
-                <Icono n="search" />
-              </span>
-              <div style={{ flex: 1 }}>
-                <b>Moverte con el teclado</b>
-                <div className="chip ajusta">
-                  <kbd>⌘K</kbd> (en Windows <kbd>Ctrl K</kbd>) o <kbd>/</kbd> para ir a cualquier sección
-                </div>
-              </div>
+      <div className="stats">
+        <Link className="stat lilac" href="/oportunidades">
+          <span className="k">En juego</span>
+          <span className="v num">{eur(k.enJuego)}</span>
+          <span className="s">{plural(k.abiertas, 'oportunidad abierta', 'oportunidades abiertas')}</span>
+        </Link>
+        <Link className="stat peach" href="/oportunidades">
+          <span className="k">
+            Lo que probablemente cerrarás <Ayuda k="prevision" />
+          </span>
+          <span className="v num">{eur(k.ponderado)}</span>
+          <span className="s">Según la probabilidad de cada una</span>
+        </Link>
+        <Link className="stat sage" href="/proyectos">
+          <span className="k">Proyectos en marcha</span>
+          <span className="v num">{activos.length}</span>
+          <span className="s">{retrasados ? plural(retrasados, 'va retrasado', 'van retrasados') : 'Ninguno retrasado'}</span>
+        </Link>
+        <Link className="stat butter" href="/calendario">
+          <span className="k">Reuniones esta semana</span>
+          <span className="v num">{reunionesSemana}</span>
+          <span className="s">De lunes a domingo</span>
+        </Link>
+      </div>
+
+      <div className="grid g-home">
+        <div className="stack">
+          <section className="card">
+            <div className="card-h">
+              <h2>
+                <Icono n="flag" />
+                Para hoy
+              </h2>
+              <Link href="/tareas">Ver todas</Link>
             </div>
-            <div className="follow">
-              <span className="tl-ic butter">
-                <Icono n="moon" />
-              </span>
-              <div style={{ flex: 1 }}>
-                <b>Elegir modo claro u oscuro</b>
-                <div className="chip">Con el botón de la luna o desde tu perfil</div>
-              </div>
+            <div className="list">
+              {paraHoy.map((t) => (
+                <FilaTarea key={t.id} t={t} punto />
+              ))}
+              {!paraHoy.length && <div className="empty">Nada pendiente para hoy. ¡Buen trabajo!</div>}
             </div>
-            <div className="follow">
-              <span className="tl-ic peach">
+          </section>
+          <section className="card">
+            <div className="card-h">
+              <h2>
+                <Icono n="send" />
+                Esperando al cliente
+              </h2>
+            </div>
+            <p className="muted" style={{ margin: '-4px 0 6px', fontSize: 12.5 }}>
+              Entregables que has enviado y aún no tienen respuesta.
+            </p>
+            <div className="list">
+              {esperando.map(({ d, dias, p }) => (
+                <Link key={d.id} className="follow enlace-fila" href={`/proyectos?p=${d.projectId}`}>
+                  <span className="tl-ic butter">
+                    <Icono n="send" />
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <b>{d.name}</b>
+                    <div className="chip">{p?.name}</div>
+                  </div>
+                  <span className={`chip ${dias >= 5 ? 'late' : ''}`}>{dias ? `hace ${plural(dias, 'día', 'días')}` : 'hoy'}</span>
+                </Link>
+              ))}
+              {!esperando.length && <div className="empty">No esperas respuesta de nadie.</div>}
+            </div>
+          </section>
+          <section className="card">
+            <div className="card-h">
+              <h2>
                 <Icono n="folder" />
-              </span>
-              <div style={{ flex: 1 }}>
-                <b>Ver qué hará cada sección</b>
-                <div className="chip">{SECCIONES.length - 1} secciones preparadas en el menú</div>
-              </div>
+                Proyectos en marcha
+              </h2>
+              <Link href="/proyectos">Ver proyectos</Link>
             </div>
-          </div>
-        </section>
+            <div className="list">
+              {activos.map((p) => {
+                const ct = c.contacts.find((x) => x.id === p.contactId);
+                return (
+                  <Link className="proj-mini" key={p.id} href={`/proyectos?p=${p.id}`}>
+                    <div className="row">
+                      <b>{p.name}</b>
+                      <Pill cls={FASES_PROYECTO[p.status].cls}>{FASES_PROYECTO[p.status].label}</Pill>
+                    </div>
+                    <BarraFases p={p} />
+                    <div className="row">
+                      <span className="chip">{empresaDe(c, ct) || ct?.name || 'Sin cliente'}</span>
+                      <span className="chip num">{p.end ? `Entrega ${relativa(p.end, hoy).toLowerCase()}` : 'Sin fecha de entrega'}</span>
+                    </div>
+                  </Link>
+                );
+              })}
+              {!activos.length && (
+                <div className="empty">
+                  No tienes proyectos en marcha.{' '}
+                  <button type="button" className="text-link" onClick={() => abrir('project')}>
+                    Crear uno
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+        <div className="stack">
+          <section className="card">
+            <div className="card-h">
+              <h2>
+                <Icono n="calendar" />
+                Próximas reuniones
+              </h2>
+              <Link href="/calendario">Calendario</Link>
+            </div>
+            <div className="list">
+              {proximas.map((e) => (
+                <FilaReunion key={e.id} e={e} />
+              ))}
+              {!proximas.length && <div className="empty">Sin reuniones próximas.</div>}
+            </div>
+          </section>
+          <section className="card">
+            <div className="card-h">
+              <h2>
+                <Icono n="funnel" />
+                Oportunidades más probables
+              </h2>
+              <Link href="/oportunidades">Ver todas</Link>
+            </div>
+            <div className="list">
+              {probables.map((d) => (
+                <button type="button" key={d.id} className="follow fila-boton" onClick={() => abrir('deal', { id: d.id })}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <b>{d.title}</b>
+                    <div className="chip">
+                      {FASES_OPORTUNIDAD[d.stage].label}
+                      {d.expected ? ` · decisión ${relativa(d.expected, hoy).toLowerCase()}` : ''}
+                    </div>
+                  </div>
+                  <b className="num">{eur(d.value)}</b>
+                </button>
+              ))}
+              {!probables.length && <div className="empty">No hay oportunidades abiertas.</div>}
+            </div>
+          </section>
+          {fijadas.length > 0 && (
+            <section className="card">
+              <div className="card-h">
+                <h2>
+                  <Icono n="note" />
+                  Notas fijadas
+                </h2>
+                <Link href="/notas">Ver notas</Link>
+              </div>
+              <div className="stack" style={{ gap: 10 }}>
+                {fijadas.map((n) => (
+                  <button type="button" key={n.id} className={`note ${n.color}`} style={{ textAlign: 'left', width: '100%', whiteSpace: 'pre-wrap' }} onClick={() => abrir('note', { id: n.id })}>
+                    {n.text}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
       </div>
     </>
+  );
+}
+
+/** Tarea rápida en lenguaje natural con vista previa (SPEC §7.10). */
+function TareaRapida() {
+  const { c, hoy, crear } = useDatos();
+  const toast = useToast();
+  const [texto, setTexto] = useState('');
+  const r = texto.trim() ? leerTareaRapida(texto, hoy, c.contacts, c.projects) : null;
+  const q = r ? CUADRANTES[cuadranteDe(r)] : null;
+
+  const crearla = async () => {
+    if (!r?.title) return;
+    const ok = await crear('tasks', tareaNueva({ title: r.title.slice(0, 300), due: r.due, urgent: r.urgent, important: r.important, contactId: r.contactId, projectId: r.projectId }));
+    if (ok) {
+      setTexto('');
+      toast('Tarea creada');
+    }
+  };
+
+  return (
+    <form
+      className="card quick"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void crearla();
+      }}
+    >
+      <div className="quick-row">
+        <input
+          className="input"
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          placeholder="Escribe una tarea… p. ej. «Llamar a @Lucía mañana urgente»"
+          aria-label="Crear tarea rápida"
+          aria-describedby="quick-hint"
+          maxLength={300}
+        />
+        <button type="submit" className="btn primary">
+          <Icono n="plus" />
+          Crear tarea
+        </button>
+      </div>
+      <div className="quick-hint" id="quick-hint" aria-live="polite">
+        {r && q ? (
+          <>
+            Se creará: <b style={{ color: 'var(--fg)' }}>{r.title || '…'}</b>
+            {r.due && (
+              <span className="pill mist">
+                <Icono n="clock" />
+                {relativa(r.due, hoy)}
+              </span>
+            )}
+            <span className={`pill ${q.cls}`}>{q.label}</span>
+            {r.contactId && <span className="pill sage">{c.contacts.find((x) => x.id === r.contactId)?.name}</span>}
+            {r.projectId && <span className="pill butter">{c.projects.find((x) => x.id === r.projectId)?.name}</span>}
+          </>
+        ) : (
+          <>
+            Atajos: <code>hoy</code> <code>mañana</code> <code>viernes</code> para la fecha · <code>urgente</code> <code>importante</code> · <code>@contacto</code> · <code>#proyecto</code>
+          </>
+        )}
+      </div>
+    </form>
   );
 }
