@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { type Colecciones, type Documento, type FilaDe, type Id, type NombreColeccion } from '@/lib/datos/entidades';
+import { type Colecciones, type Documento, type Factura, type FilaDe, type Id, type NombreColeccion } from '@/lib/datos/entidades';
 import { hoy } from '@/lib/reglas/fechas';
 import { aplicarBorrado, cambiarFila, deshacerBorrado, efectoDeBorrar, ponerFila } from '@/lib/reglas/vinculos';
 import { useToast } from '@/components/ui/Toasts';
@@ -21,6 +21,12 @@ type ApiDatos = {
   marcarLeidos: (claves: string[]) => Promise<void>;
   subirDocumentos: (archivos: FileList | File[], vinculo: Pick<Documento, 'contactId' | 'companyId' | 'projectId'>) => Promise<void>;
   abrirDocumento: (d: Documento) => Promise<void>;
+  /** Emite una factura (o numera un presupuesto). Devuelve el documento emitido o null si no se pudo. */
+  emitir: (id: Id) => Promise<Factura | null>;
+  /** Guarda un archivo suelto (p. ej. el ticket de un gasto) y devuelve dónde quedó. */
+  subirArchivo: (id: Id, archivo: File) => Promise<string | null>;
+  /** Abre un archivo guardado. */
+  abrirArchivo: (ruta: string) => Promise<void>;
 };
 
 const Ctx = createContext<ApiDatos | null>(null);
@@ -147,14 +153,40 @@ export function ProveedorDatos({ children, cargando }: { children: ReactNode; ca
           }
         }
       },
-      abrirDocumento: async (d) => {
-        if (!d.storagePath) {
+      emitir: async (id) => {
+        try {
+          const f = await almacen.emitir(id);
+          poner((x) => cambiarFila(x, 'invoices', id, f));
+          return f;
+        } catch (e) {
+          toast(e instanceof Error && e.message ? e.message : 'No se ha podido emitir. Inténtalo de nuevo.');
+          return null;
+        }
+      },
+      subirArchivo: async (id, a) => {
+        if (a.size > MAX_MB * 1024 * 1024) {
+          toast(`«${a.name}» pesa más de ${MAX_MB} MB y no se puede subir`);
+          return null;
+        }
+        try {
+          return await almacen.subirArchivo(id, a);
+        } catch {
+          toast(`No se ha podido subir «${a.name}». Inténtalo de nuevo.`);
+          return null;
+        }
+      },
+      abrirArchivo: async (ruta) => abrir(ruta),
+      abrirDocumento: async (d) => abrir(d.storagePath),
+    };
+    async function abrir(ruta: string) {
+      {
+        if (!ruta) {
           toast('Es un documento de ejemplo: no tiene archivo detrás');
           return;
         }
         // Se abre la pestaña ya, para que el navegador no la bloquee al llegar el enlace.
         const ventana = window.open('', '_blank');
-        const url = await almacen.urlArchivo(d.storagePath).catch(() => null);
+        const url = await almacen.urlArchivo(ruta).catch(() => null);
         if (!url) {
           ventana?.close();
           toast('No se ha podido abrir el documento');
@@ -162,8 +194,8 @@ export function ProveedorDatos({ children, cargando }: { children: ReactNode; ca
         }
         if (ventana) ventana.location.href = url;
         else window.location.href = url;
-      },
-    };
+      }
+    }
   }, [c, almacen, poner, conAviso, toast]);
 
   if (error)

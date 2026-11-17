@@ -61,25 +61,33 @@ export function useAccionesCrm() {
    * Mueve una oportunidad de fase. Si se gana y no tiene proyecto, lo crea con la plantilla de su disciplina.
    * `desdeFormulario`: la oportunidad ya está guardada con su nueva fase; solo falta lo que provoca.
    */
-  const mover = async (d: Oportunidad, fase: FaseOportunidad, desdeFormulario = false) => {
-    if (!desdeFormulario && d.stage === fase) return;
+  /** Devuelve el proyecto de la oportunidad (el nuevo, si se acaba de crear). `callado`: sin avisos (lo avisa quien llama). */
+  const mover = async (d: Oportunidad, fase: FaseOportunidad, desdeFormulario = false, callado = false): Promise<string | null> => {
+    if (!desdeFormulario && d.stage === fase) return d.projectId;
     const r = moverOportunidad(d, fase, { c, hoy, tarifa: ajustes.rate, nuevoId, ahora: ahoraISO(), desdeFormulario });
+    // Ganar la oportunidad acepta sus presupuestos pendientes.
+    if (fase === 'ganado')
+      for (const q of c.invoices.filter((f) => f.kind === 'presupuesto' && f.dealId === d.id && f.status !== 'aceptado' && f.status !== 'rechazado'))
+        await actualizar('invoices', q.id, { status: 'aceptado' });
     if (r.proyecto) {
       const { project, tasks, deliverables, plantilla } = r.proyecto;
-      if (!(await crear('projects', project))) return;
+      if (!(await crear('projects', project))) return null;
       await crearVarios('tasks', tasks);
       await crearVarios('deliverables', deliverables);
       await actualizar('deals', d.id, r.cambios);
-      toast(`¡Ganada! Proyecto creado${plantilla ? ` con la plantilla «${plantilla}»` : ''}`, {
-        label: 'Ver proyecto',
-        fn: () => router.push(`/proyectos?p=${project.id}`),
-      });
-      return;
+      if (!callado)
+        toast(`¡Ganada! Proyecto creado${plantilla ? ` con la plantilla «${plantilla}»` : ''}`, {
+          label: 'Ver proyecto',
+          fn: () => router.push(`/proyectos?p=${project.id}`),
+        });
+      return project.id;
     }
-    if (!desdeFormulario && !(await actualizar('deals', d.id, r.cambios))) return;
+    if (!desdeFormulario && !(await actualizar('deals', d.id, r.cambios))) return d.projectId;
+    if (callado) return d.projectId;
     if (fase === 'perdido' && !d.lostReason) toast('Oportunidad perdida', { label: 'Apuntar motivo', fn: () => abrir('deal', { id: d.id }) });
     else if (fase === 'ganado') toast('Oportunidad ganada');
     else if (!desdeFormulario) toast(`Movida a «${FASES_OPORTUNIDAD[fase].label}»`);
+    return d.projectId;
   };
 
   /** Cambia la fase de un proyecto (o lo pausa / reanuda). */

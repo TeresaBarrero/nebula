@@ -6,11 +6,12 @@ import { Icono } from '@/components/ui/Icono';
 import { useToast } from '@/components/ui/Toasts';
 import { useFormularios } from './formularios/Formulario';
 import type { TipoForm } from './formularios/definiciones';
+import { useDinero } from '@/components/dinero/Dinero';
 
 // Mismo orden y colores que el menú «+» del prototipo, con la fase en que cada cosa se podrá crear.
 const OPCIONES: [string, NombreIcono, string, number, TipoForm?][] = [
   ['Nota', 'note', 'butter', 1, 'note'],
-  ['Gasto', 'wallet', 'peach', 2],
+  ['Gasto', 'wallet', 'peach', 2, 'expense'],
   ['Factura', 'receipt', 'sand', 2],
   ['Proyecto', 'folder', 'butter', 1, 'project'],
   ['Oportunidad', 'funnel', 'lilac', 1, 'deal'],
@@ -25,6 +26,7 @@ const OPCIONES: [string, NombreIcono, string, number, TipoForm?][] = [
 export function BotonCrear({ abierto, setAbierto }: { abierto: boolean; setAbierto: (v: boolean) => void }) {
   const toast = useToast();
   const abrir = useFormularios();
+  const dinero = useDinero();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,6 +51,7 @@ export function BotonCrear({ abierto, setAbierto }: { abierto: boolean; setAbier
               onClick={() => {
                 setAbierto(false);
                 if (tipo) abrir(tipo);
+                else if (label === 'Factura') dinero.nueva('factura');
                 else toast(`Crear ${label.toLowerCase()} llega en la Fase ${fase}`);
               }}
             >

@@ -14,10 +14,11 @@ import {
   type Pastel,
 } from '@/lib/catalogos/crm';
 import type { Colecciones, NombreColeccion } from '@/lib/datos/entidades';
+import { CATEGORIAS_GASTO, TIPOS_IVA, TIPOS_RENOVACION } from '@/lib/catalogos/dinero';
 import { PLANTILLAS } from '@/lib/catalogos/plantillas';
 import { REPETICIONES } from '@/lib/reglas/tareas';
 
-export type TipoForm = 'contact' | 'company' | 'deal' | 'project' | 'task' | 'event' | 'note';
+export type TipoForm = 'contact' | 'company' | 'deal' | 'project' | 'task' | 'event' | 'note' | 'retainer' | 'renewal' | 'expense';
 
 export type Valores = Record<string, string | boolean>;
 
@@ -26,7 +27,7 @@ type Opcion = { v: string; label: string; cls?: Pastel };
 export type Campo =
   | { tipo: 'seccion'; label: string; visible?: (v: Valores) => boolean }
   | {
-      tipo: 'text' | 'email' | 'tel' | 'number' | 'date' | 'time' | 'textarea' | 'check' | 'flags';
+      tipo: 'text' | 'email' | 'tel' | 'number' | 'date' | 'time' | 'textarea' | 'check' | 'flags' | 'archivo';
       k: string;
       label: string;
       req?: boolean;
@@ -200,6 +201,60 @@ export const DEFINICIONES: Record<TipoForm, Definicion> = {
       { tipo: 'time', k: 'time', label: 'Hora' },
       { tipo: 'select', k: 'contactId', label: 'Con quién', de: 'contacts' },
       { tipo: 'select', k: 'projectId', label: 'Proyecto', de: 'projects' },
+    ],
+  },
+  retainer: {
+    col: 'retainers',
+    nuevo: 'Nueva iguala',
+    editar: 'Editar iguala',
+    guardado: 'Iguala guardada',
+    borrado: 'Iguala eliminada',
+    campos: [
+      { tipo: 'text', k: 'name', label: 'Servicio', req: true, full: true, max: 200 },
+      { tipo: 'select', k: 'companyId', label: 'Cliente', de: 'companies' },
+      { tipo: 'select', k: 'contactId', label: 'Persona de contacto', de: 'contacts', filtro: (c, v) => c.type !== 'Colaborador' && (!v.companyId || c.companyId === v.companyId) },
+      { tipo: 'selectv', k: 'discipline', label: 'Disciplina', opciones: disciplinas('Sin disciplina') },
+      { tipo: 'number', k: 'fee', label: 'Cuota al mes (€, sin IVA)', req: true },
+      { tipo: 'number', k: 'hours', label: 'Horas incluidas al mes' },
+      { tipo: 'number', k: 'billingDay', label: 'Día del mes en que la facturas' },
+      { tipo: 'date', k: 'start', label: 'Desde' },
+      { tipo: 'textarea', k: 'services', label: '¿Qué incluye?', full: true, max: 5000 },
+      { tipo: 'check', k: 'active', label: 'Activa', full: true },
+    ],
+  },
+  renewal: {
+    col: 'renewals',
+    nuevo: 'Nueva renovación',
+    editar: 'Editar renovación',
+    guardado: 'Renovación guardada',
+    borrado: 'Renovación eliminada',
+    campos: [
+      { tipo: 'text', k: 'name', label: 'Servicio (p. ej. dominio.es)', req: true, full: true, max: 200 },
+      { tipo: 'select', k: 'companyId', label: 'Cliente', de: 'companies' },
+      { tipo: 'selectv', k: 'type', label: 'Tipo', opciones: op(TIPOS_RENOVACION) },
+      { tipo: 'text', k: 'provider', label: 'Proveedor', max: 120 },
+      { tipo: 'date', k: 'renewDate', label: 'Fecha de renovación', req: true },
+      { tipo: 'number', k: 'cost', label: 'Te cuesta al año (€)' },
+      { tipo: 'number', k: 'price', label: 'Le cobras al año (€)' },
+    ],
+  },
+  expense: {
+    col: 'expenses',
+    nuevo: 'Nuevo gasto',
+    editar: 'Editar gasto',
+    guardado: 'Gasto apuntado',
+    borrado: 'Gasto eliminado',
+    campos: [
+      { tipo: 'date', k: 'date', label: 'Fecha', req: true },
+      { tipo: 'text', k: 'supplier', label: 'Proveedor', req: true, max: 200 },
+      { tipo: 'text', k: 'concept', label: 'Concepto', req: true, full: true, max: 300 },
+      { tipo: 'selectv', k: 'category', label: 'Categoría', opciones: lista(CATEGORIAS_GASTO) },
+      { tipo: 'select', k: 'projectId', label: 'Proyecto (opcional)', de: 'projects' },
+      { tipo: 'number', k: 'base', label: 'Importe sin IVA (€)', req: true },
+      { tipo: 'selectv', k: 'ivaPct', label: 'IVA del ticket', opciones: TIPOS_IVA.map((x) => ({ v: String(x), label: x ? `${x} %` : '0 % (sin IVA)' })) },
+      { tipo: 'select', k: 'contactId', label: 'Colaborador o proveedor (opcional)', de: 'contacts', filtro: (c) => c.type === 'Colaborador' || c.type === 'Proveedor' },
+      { tipo: 'check', k: 'deductible', label: 'Es un gasto de mi actividad (deducible)', full: true },
+      { tipo: 'archivo', k: 'receipt', label: 'Ticket o factura del proveedor', full: true },
     ],
   },
   note: {

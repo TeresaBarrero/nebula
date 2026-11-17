@@ -31,7 +31,7 @@ export function ProveedorFormularios({ children }: { children: ReactNode }) {
 }
 
 function Formulario({ tipo, datos, alCerrar }: { tipo: TipoForm; datos: Record<string, unknown>; alCerrar: () => void }) {
-  const { c, hoy, crear, actualizar, borrar } = useDatos();
+  const { c, hoy, crear, actualizar, borrar, subirArchivo } = useDatos();
   const toast = useToast();
   const { ponerPlantilla, mover } = useAccionesCrm();
   const def = DEFINICIONES[tipo];
@@ -41,6 +41,7 @@ function Formulario({ tipo, datos, alCerrar }: { tipo: TipoForm; datos: Record<s
   const [errores, setErrores] = useState<Record<string, boolean>>({});
   const [confirmarBorrado, setConfirmarBorrado] = useState(false);
   const [masOpciones, setMasOpciones] = useState(false);
+  const [archivo, setArchivo] = useState<File | null>(null);
 
   const cambia = (k: string, x: string | boolean) =>
     setV((ant) => {
@@ -76,6 +77,11 @@ function Formulario({ tipo, datos, alCerrar }: { tipo: TipoForm; datos: Record<s
     }
     const id = (previo?.id as string) ?? nuevoId();
     const fila = aEntidad(tipo, v, { id, createdAt: (previo?.createdAt as string) ?? ahoraISO(), hoy }, previo);
+    if (tipo === 'expense' && archivo) {
+      const ruta = await subirArchivo(id, archivo);
+      if (ruta === null) return;
+      Object.assign(fila, { receiptPath: ruta, receiptName: archivo.name.slice(0, 255) });
+    }
     const col = def.col as NombreColeccion;
     const ok = previo ? await actualizar(col, id, fila as never) : await crear(col, fila as never);
     if (!ok) return;
@@ -127,7 +133,7 @@ function Formulario({ tipo, datos, alCerrar }: { tipo: TipoForm; datos: Record<s
     <Modal titulo={previo ? def.editar : def.nuevo} alCerrar={alCerrar} comoFormulario={() => void guardar()} pie={pie}>
       <div className="modal-b">
         {normales.map((f, i) => (
-          <CampoForm key={i} f={f} v={v} cambia={cambia} error={'k' in f && errores[f.k]} primero={i === 0 || (i === 1 && normales[0].tipo === 'seccion')} />
+          <CampoForm key={i} f={f} v={v} cambia={cambia} alElegirArchivo={setArchivo} error={'k' in f && errores[f.k]} primero={i === 0 || (i === 1 && normales[0].tipo === 'seccion')} />
         ))}
         {avanzados.length > 0 && (
           <div className="full">
@@ -137,13 +143,27 @@ function Formulario({ tipo, datos, alCerrar }: { tipo: TipoForm; datos: Record<s
             </button>
           </div>
         )}
-        {masOpciones && avanzados.map((f, i) => <CampoForm key={'a' + i} f={f} v={v} cambia={cambia} error={false} primero={false} />)}
+        {masOpciones && avanzados.map((f, i) => <CampoForm key={'a' + i} f={f} v={v} cambia={cambia} alElegirArchivo={setArchivo} error={false} primero={false} />)}
       </div>
     </Modal>
   );
 }
 
-function CampoForm({ f, v, cambia, error, primero }: { f: Campo; v: Valores; cambia: (k: string, x: string | boolean) => void; error: boolean; primero: boolean }) {
+function CampoForm({
+  f,
+  v,
+  cambia,
+  alElegirArchivo,
+  error,
+  primero,
+}: {
+  f: Campo;
+  v: Valores;
+  cambia: (k: string, x: string | boolean) => void;
+  alElegirArchivo: (a: File | null) => void;
+  error: boolean;
+  primero: boolean;
+}) {
   const { c } = useDatos();
   if (f.tipo === 'seccion') return <div className="f-section">{f.label}</div>;
   const id = `f-${f.k}`;
@@ -152,6 +172,14 @@ function CampoForm({ f, v, cambia, error, primero }: { f: Campo; v: Valores; cam
   const val = String(v[f.k] ?? '');
 
   switch (f.tipo) {
+    case 'archivo':
+      return (
+        <label className={`field ${full}`}>
+          <span>{f.label}</span>
+          {v.receiptName ? <span className="chip">Ahora: {String(v.receiptName)} (elige otro para cambiarlo)</span> : null}
+          <input className="input" id={id} type="file" accept="image/*,application/pdf" onChange={(e) => alElegirArchivo(e.target.files?.[0] ?? null)} />
+        </label>
+      );
     case 'check':
       return (
         <label className="toggle" style={{ gridColumn: f.full ? '1/-1' : 'auto' }}>

@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FASES_ABIERTAS } from '@/lib/catalogos/crm';
 import { NAV } from '@/lib/catalogos/nav';
+import { estadoDe } from '@/lib/reglas/facturas';
+import { diasHasta } from '@/lib/reglas/fechas';
+import { igualaPorFacturar } from '@/lib/reglas/recurrentes';
 import { iniciales } from '@/lib/reglas/textos';
 import { Icono } from '@/components/ui/Icono';
 import { useDatos } from './Datos';
@@ -15,11 +18,13 @@ export function BarraLateral({ alNavegar }: { alNavegar: () => void }) {
   const { perfil, ajustes, cambiarCompacto } = useNebula();
   const activa = (id: string) => ruta === `/${id}` || ruta.startsWith(`/${id}/`);
   const { c, hoy } = useDatos();
-  // Pendientes de cada sección (punto melocotón cuando el menú está plegado). Las de Dinero llegan en la Fase 2.
+  // Pendientes de cada sección (punto melocotón cuando el menú está plegado).
   const insignias: Record<string, number> = {
     tareas: c.tasks.filter((t) => !t.done && t.due && t.due <= hoy).length,
     calendario: c.events.filter((e) => e.date === hoy).length,
     oportunidades: c.deals.filter((d) => FASES_ABIERTAS.includes(d.stage) && d.expected && d.expected < hoy).length,
+    facturas: c.invoices.filter((f) => f.kind === 'factura' && f.status === 'emitida' && estadoDe(c, f, hoy) === 'vencida').length,
+    igualas: c.retainers.filter((r) => igualaPorFacturar(r, hoy)).length + c.renewals.filter((n) => diasHasta(n.renewDate, hoy) <= 15).length,
   };
 
   return (

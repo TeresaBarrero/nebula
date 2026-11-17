@@ -1,5 +1,6 @@
 import { esDisciplina } from '@/lib/catalogos/disciplinas';
 import { FASES_OPORTUNIDAD, FASES_PROYECTO, PRIORIDADES } from '@/lib/catalogos/crm';
+import { CATEGORIAS_GASTO, TIPOS_RENOVACION } from '@/lib/catalogos/dinero';
 import { PLANTILLAS, esPlantilla } from '@/lib/catalogos/plantillas';
 import { sumarDias } from '@/lib/reglas/fechas';
 import type {
@@ -9,19 +10,23 @@ import type {
   EstadoContacto,
   FaseOportunidad,
   FaseProyecto,
+  Gasto,
+  Iguala,
   Nota,
   Oportunidad,
   Prioridad,
   Proyecto,
+  Renovacion,
   Repeticion,
   Reunion,
   Tarea,
   TipoContacto,
+  TipoRenovacion,
   ViaPermiso,
 } from '@/lib/datos/entidades';
 import type { TipoForm, Valores } from './definiciones';
 
-type Entidad = Empresa | Contacto | Oportunidad | Proyecto | Tarea | Reunion | Nota;
+type Entidad = Empresa | Contacto | Oportunidad | Proyecto | Tarea | Reunion | Nota | Iguala | Renovacion | Gasto;
 
 const s = (v: Valores, k: string, max = 5000) => String(v[k] ?? '').trim().slice(0, max);
 const n = (v: Valores, k: string, def = 0, min = 0, max = 1e9) => {
@@ -64,6 +69,12 @@ export function porDefecto(tipo: TipoForm, hoy: string): Record<string, unknown>
       return { date: hoy, time: '10:00' };
     case 'note':
       return { color: 'butter', pinned: false };
+    case 'retainer':
+      return { active: true, billingDay: 1, start: hoy, fee: '', hours: '' };
+    case 'renewal':
+      return { type: 'dominio', renewDate: sumarDias(hoy, 365) };
+    case 'expense':
+      return { date: hoy, category: 'Otros', ivaPct: 21, deductible: true, base: '' };
   }
 }
 
@@ -181,6 +192,56 @@ export function aEntidad(tipo: TipoForm, v: Valores, base: { id: string; created
         projectId: nulo(v, 'projectId'),
         source: antes?.source ?? null,
       } satisfies Reunion;
+    }
+    case 'retainer': {
+      const antes = previo as Partial<Iguala> | null;
+      return {
+        ...comun,
+        name: s(v, 'name', 200),
+        companyId: nulo(v, 'companyId'),
+        contactId: nulo(v, 'contactId'),
+        discipline: esDisciplina(v.discipline) ? v.discipline : null,
+        fee: n(v, 'fee', 0, 0, 1e9),
+        hours: n(v, 'hours', 0, 0, 1000),
+        billingDay: Math.round(n(v, 'billingDay', 1, 1, 31)),
+        services: s(v, 'services'),
+        active: b(v, 'active'),
+        start: nulo(v, 'start'),
+        lastBilled: antes?.lastBilled ?? '',
+        extraBilled: antes?.extraBilled ?? '',
+      } satisfies Iguala;
+    }
+    case 'renewal': {
+      const tipo = s(v, 'type');
+      return {
+        ...comun,
+        companyId: nulo(v, 'companyId'),
+        type: (Object.hasOwn(TIPOS_RENOVACION, tipo) ? tipo : 'dominio') as TipoRenovacion,
+        name: s(v, 'name', 200),
+        provider: s(v, 'provider', 120),
+        cost: n(v, 'cost', 0, 0, 1e9),
+        price: n(v, 'price', 0, 0, 1e9),
+        renewDate: s(v, 'renewDate') || base.hoy,
+      } satisfies Renovacion;
+    }
+    case 'expense': {
+      const antes = previo as Partial<Gasto> | null;
+      const cat = s(v, 'category');
+      const iva = n(v, 'ivaPct', 21);
+      return {
+        ...comun,
+        date: s(v, 'date') || base.hoy,
+        supplier: s(v, 'supplier', 200),
+        contactId: nulo(v, 'contactId'),
+        concept: s(v, 'concept', 300),
+        category: (CATEGORIAS_GASTO as readonly string[]).includes(cat) ? cat : 'Otros',
+        base: n(v, 'base', 0, 0, 1e9),
+        ivaPct: [0, 4, 10, 21].includes(iva) ? iva : 21,
+        deductible: b(v, 'deductible'),
+        projectId: nulo(v, 'projectId'),
+        receiptPath: antes?.receiptPath ?? '',
+        receiptName: antes?.receiptName ?? '',
+      } satisfies Gasto;
     }
     case 'note': {
       const antes = previo as Partial<Nota> | null;

@@ -12,6 +12,7 @@ import { useIrA } from './acciones';
 import { useDatos } from './Datos';
 import { useFormularios } from './formularios/Formulario';
 import type { TipoForm } from './formularios/definiciones';
+import { useDinero } from '@/components/dinero/Dinero';
 
 /** Grupo del menú al que pertenece una sección. */
 function grupoDe(id: string): string {
@@ -33,6 +34,9 @@ const CREAR: [TipoForm, string, NombreIcono, Pastel, string][] = [
   ['contact', 'Crear contacto', 'users', 'sage', 'name'],
   ['company', 'Crear empresa', 'building', 'sand', 'name'],
   ['project', 'Crear proyecto', 'folder', 'butter', 'name'],
+  ['expense', 'Apuntar gasto', 'wallet', 'peach', 'concept'],
+  ['retainer', 'Crear iguala', 'repeat', 'lilac', 'name'],
+  ['renewal', 'Añadir renovación', 'globe', 'lilac', 'name'],
   ['note', 'Crear nota', 'note', 'butter', 'text'],
 ];
 
@@ -43,6 +47,7 @@ export function Paleta({ alCerrar }: { alCerrar: () => void }) {
   const { c, hoy } = useDatos();
   const abrir = useFormularios();
   const irA = useIrA();
+  const dinero = useDinero();
   const [texto, setTexto] = useState('');
   const [sel, setSel] = useState(0);
 
@@ -57,7 +62,22 @@ export function Paleta({ alCerrar }: { alCerrar: () => void }) {
       const literal = Boolean(q) && !normalizar(l).includes(q);
       return { clave: 'crear-' + tipo, label: literal ? `${l}: «${raw}»` : l, icono, cls, pista: 'Crear', ir: () => abrir(tipo, literal ? { [campo]: raw } : {}) };
     });
-    if (crear.length) out.push({ titulo: 'Crear', items: q ? crear.slice(0, 4) : crear });
+    const docs = (['factura', 'presupuesto'] as const)
+      .map((k) => ({ k, l: k === 'factura' ? 'Crear factura' : 'Crear presupuesto' }))
+      .filter(({ l }) => !q || normalizar(l).includes(q) || q.length > 2)
+      .map(({ k, l }) => {
+        const literal = Boolean(q) && !normalizar(l).includes(q);
+        return {
+          clave: 'crear-' + k,
+          label: literal ? `${l}: «${raw}»` : l,
+          icono: 'receipt' as NombreIcono,
+          cls: 'sand' as Pastel,
+          pista: 'Crear',
+          ir: () => dinero.nueva(k, literal ? { lines: [{ desc: raw, qty: 1, price: 0 }] } : {}),
+        };
+      });
+    const todas = [...crear, ...docs];
+    if (todas.length) out.push({ titulo: 'Crear', items: q ? todas.slice(0, 4) : todas });
     const ir = SECCIONES_IR.filter((s) => !q || normalizar(s.label).includes(q)).map((s) => ({
       clave: 'ir-' + s.id,
       label: `Ir a ${s.label}`,
@@ -68,7 +88,7 @@ export function Paleta({ alCerrar }: { alCerrar: () => void }) {
     }));
     if (ir.length) out.push({ titulo: 'Ir a', items: ir });
     return out;
-  }, [texto, c, hoy, abrir, irA]);
+  }, [texto, c, hoy, abrir, irA, dinero]);
 
   const items = grupos.flatMap((g) => g.items);
   const elegir = (i: Item | undefined) => {

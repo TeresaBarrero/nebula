@@ -10,6 +10,7 @@ import { BotonCrear } from './BotonCrear';
 import { useNebula } from './Nebula';
 import { Paleta } from './Paleta';
 import { ProveedorFormularios, useFormularios } from './formularios/Formulario';
+import { ProveedorDinero } from '@/components/dinero/Dinero';
 
 const Ctx = createContext<{ abrirAsistente: () => void }>({ abrirAsistente: () => {} });
 export const useCarcasa = () => useContext(Ctx);
@@ -21,7 +22,9 @@ const escribiendo = (t: EventTarget | null) =>
 export function Carcasa({ children }: { children: ReactNode }) {
   return (
     <ProveedorFormularios>
-      <CarcasaInterior>{children}</CarcasaInterior>
+      <ProveedorDinero>
+        <CarcasaInterior>{children}</CarcasaInterior>
+      </ProveedorDinero>
     </ProveedorFormularios>
   );
 }
