@@ -38,7 +38,15 @@ export type Ajustes = {
   disciplines: Disciplina[];
   payOnline: { card: boolean; bizum: boolean };
   onboarded: boolean;
+  /** Nombre corto para las direcciones públicas (/reservar/…, /formulario/…). */
+  publicSlug: string;
+  /** Página de reservas: activa, duración (min), horario y días (1 = lunes … 5 = viernes). */
+  booking: Reservas;
+  /** Formulario para la web activo. */
+  leadFormOn: boolean;
 };
+
+export type Reservas = { on: boolean; duration: number; from: string; to: string; days: number[] };
 
 export type EstadoCuenta = 'pendiente' | 'aprobado' | 'rechazado';
 
@@ -122,4 +130,7 @@ export const AJUSTES_POR_DEFECTO: Ajustes = {
   disciplines: [],
   payOnline: { card: false, bizum: false },
   onboarded: false,
+  publicSlug: '',
+  booking: { on: false, duration: 30, from: '10:00', to: '14:00', days: [1, 2, 3, 4, 5] },
+  leadFormOn: false,
 };

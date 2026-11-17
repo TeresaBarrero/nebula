@@ -14,7 +14,20 @@ import { semillaDemo } from './semilla';
 
 /** Dónde guarda la demo sus datos en el navegador. Si cambia la forma de los datos, se sube `v`. */
 export const CLAVE_DEMO = 'nebula-demo';
-const VERSION = 4;
+const VERSION = 5;
+
+/** Datos de ejemplo de la Fase 4 (contratos, informes, automatizaciones) para una demo ya empezada. */
+function clienteDeEjemplo(semilla: Colecciones, previas: Colecciones): Colecciones {
+  const hay = (lista: { id: string }[], id: string | null) => !id || lista.some((x) => x.id === id);
+  return {
+    ...previas,
+    contracts: semilla.contracts.filter((k) => hay(previas.companies, k.companyId) && hay(previas.projects, k.projectId) && hay(previas.contacts, k.contactId)),
+    reports: semilla.reports.filter((r) => hay(previas.retainers, r.retainerId)),
+    automations: semilla.automations,
+    automationRuns: semilla.automationRuns,
+    outgoingEmails: [],
+  };
+}
 
 /** Datos de ejemplo de la Fase 3 que se añaden a una demo ya empezada (sin enlaces rotos ni pisar lo que se cambió). */
 function trabajoDeEjemplo(semilla: Colecciones, previas: Colecciones): Colecciones {
@@ -76,6 +89,10 @@ const ajustesEjemplo = (): Ajustes => ({
   address: 'C/ Ejemplo 1, 28001 Madrid',
   iban: 'ES00 0000 0000 0000 0000 0000',
   disciplines: ['branding', 'grafico', 'web', 'social', 'cint', 'cext'],
+  payOnline: { card: true, bizum: false },
+  publicSlug: 'estudio-creativo',
+  booking: { on: true, duration: 30, from: '10:00', to: '14:00', days: [1, 2, 3, 4, 5] },
+  leadFormOn: true,
 });
 
 /** Estado inicial de la demo: los datos de ejemplo del prototipo, con fechas desde `dia`. */
@@ -98,10 +115,11 @@ export function leerDemo(store: Guardado, dia: string = hoy()): EstadoDemo {
         const semilla = () => semillaDemo(dia);
         let colecciones: Colecciones;
         if (s.v === VERSION && s.colecciones) colecciones = { ...coleccionesVacias(), ...s.colecciones };
-        else if ((s.v === 2 || s.v === 3) && s.colecciones) {
+        else if ((s.v === 2 || s.v === 3 || s.v === 4) && s.colecciones) {
           const base = { ...coleccionesVacias(), ...s.colecciones };
           const conDinero = s.v === 2 ? { ...base, ...dineroDeEjemplo(semilla(), s.colecciones) } : base;
-          colecciones = trabajoDeEjemplo(semilla(), conDinero);
+          const conTrabajo = s.v === 4 ? conDinero : trabajoDeEjemplo(semilla(), conDinero);
+          colecciones = clienteDeEjemplo(semilla(), conTrabajo);
         } else colecciones = semilla();
         return {
           v: VERSION,

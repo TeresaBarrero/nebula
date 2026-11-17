@@ -17,6 +17,9 @@ const VINCULOS: Partial<Record<NombreColeccion, Vinculo[]>> = {
     { col: 'invoices', campo: 'companyId', alBorrar: 'null' },
     { col: 'posts', campo: 'companyId', alBorrar: 'cascada' },
     { col: 'accesses', campo: 'companyId', alBorrar: 'cascada' },
+    { col: 'contracts', campo: 'companyId', alBorrar: 'null' },
+    { col: 'reports', campo: 'companyId', alBorrar: 'null' },
+    { col: 'outgoingEmails', campo: 'companyId', alBorrar: 'null' },
   ],
   contacts: [
     { col: 'projects', campo: 'contactId', alBorrar: 'null' },
@@ -30,6 +33,8 @@ const VINCULOS: Partial<Record<NombreColeccion, Vinculo[]>> = {
     { col: 'retainers', campo: 'contactId', alBorrar: 'null' },
     { col: 'invoices', campo: 'contactId', alBorrar: 'null' },
     { col: 'expenses', campo: 'contactId', alBorrar: 'null' },
+    { col: 'contracts', campo: 'contactId', alBorrar: 'null' },
+    { col: 'outgoingEmails', campo: 'contactId', alBorrar: 'null' },
   ],
   projects: [
     { col: 'deals', campo: 'projectId', alBorrar: 'null' },
@@ -42,15 +47,19 @@ const VINCULOS: Partial<Record<NombreColeccion, Vinculo[]>> = {
     { col: 'invoices', campo: 'projectId', alBorrar: 'null' },
     { col: 'expenses', campo: 'projectId', alBorrar: 'null' },
     { col: 'timeEntries', campo: 'projectId', alBorrar: 'null' },
+    { col: 'contracts', campo: 'projectId', alBorrar: 'null' },
   ],
   deals: [{ col: 'invoices', campo: 'dealId', alBorrar: 'null' }],
   retainers: [
     { col: 'invoices', campo: 'retainerId', alBorrar: 'null' },
     { col: 'timeEntries', campo: 'retainerId', alBorrar: 'null' },
+    { col: 'contracts', campo: 'retainerId', alBorrar: 'null' },
+    { col: 'reports', campo: 'retainerId', alBorrar: 'cascada' },
   ],
   invoices: [
     { col: 'payments', campo: 'invoiceId', alBorrar: 'cascada' },
     { col: 'invoices', campo: 'fromQuoteId', alBorrar: 'null' },
+    { col: 'contracts', campo: 'depositInvoiceId', alBorrar: 'null' },
   ],
   tasks: [
     { col: 'tasks', campo: 'blockedBy', alBorrar: 'null' },

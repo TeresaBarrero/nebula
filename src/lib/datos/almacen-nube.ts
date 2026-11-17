@@ -45,6 +45,15 @@ export function perfilDesdeFila(f: FilaPerfil): Perfil {
   return { fullName: f.full_name, name: f.name, role: f.role, email: f.email, phone: f.phone, prefs: prefsDesde(f.prefs), activeTimer: cronometroDesde(f.active_timer) };
 }
 
+/** Ajustes de la página de reservas con valores seguros. */
+export function reservasDesde(j: unknown): Ajustes['booking'] {
+  const o = (j && typeof j === 'object' ? j : {}) as Record<string, unknown>;
+  const hora = (v: unknown, def: string) => (typeof v === 'string' && /^\d\d:\d\d$/.test(v) ? v : def);
+  const dur = Number(o.duration);
+  const dias = Array.isArray(o.days) ? o.days.map(Number).filter((d) => d >= 1 && d <= 7) : [1, 2, 3, 4, 5];
+  return { on: o.on === true, duration: [15, 30, 45, 60, 90].includes(dur) ? dur : 30, from: hora(o.from, '10:00'), to: hora(o.to, '14:00'), days: dias };
+}
+
 export function ajustesDesdeFila(f: FilaAjustes): Ajustes {
   const po = (f.pay_online && typeof f.pay_online === 'object' ? f.pay_online : {}) as Record<string, unknown>;
   return {
@@ -65,6 +74,9 @@ export function ajustesDesdeFila(f: FilaAjustes): Ajustes {
     disciplines: (f.disciplines || []).filter(esDisciplina),
     payOnline: { card: po.card === true, bizum: po.bizum === true },
     onboarded: f.onboarded,
+    publicSlug: f.public_slug ?? '',
+    booking: reservasDesde(f.booking),
+    leadFormOn: f.lead_form_on,
   };
 }
 
@@ -88,6 +100,9 @@ export function filaDesdeAjustes(a: Partial<Ajustes>): CambiosAjustes {
   if (a.disciplines !== undefined) f.disciplines = a.disciplines;
   if (a.payOnline !== undefined) f.pay_online = a.payOnline;
   if (a.onboarded !== undefined) f.onboarded = a.onboarded;
+  if (a.publicSlug !== undefined) f.public_slug = a.publicSlug || null;
+  if (a.booking !== undefined) f.booking = a.booking;
+  if (a.leadFormOn !== undefined) f.lead_form_on = a.leadFormOn;
   return f;
 }
 

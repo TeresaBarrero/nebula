@@ -325,6 +325,72 @@ export type Acceso = {
   createdAt: string;
 };
 
+// ───────── Fase 4 · Cliente (SPEC §4.16, §4.17, §6.20) ─────────
+
+export type TipoContrato = 'proyecto' | 'iguala' | 'colaborador';
+export type Derechos = 'cesion' | 'licencia' | 'colaborador';
+export type EstadoContrato = 'borrador' | 'enviado' | 'firmado';
+export type Contrato = {
+  id: Id;
+  type: TipoContrato;
+  title: string;
+  projectId: Id | null;
+  retainerId: Id | null;
+  companyId: Id | null;
+  contactId: Id | null;
+  /** % de anticipo al firmar. */
+  deposit: number;
+  ip: Derechos;
+  portfolio: boolean;
+  scope: string;
+  extra: string;
+  status: EstadoContrato;
+  sentAt: Fecha | null;
+  signedAt: string | null;
+  signedBy: string;
+  signedIp: string;
+  signedUserAgent: string;
+  /** Texto exacto que firmó el cliente y su huella SHA-256. */
+  signedText: string;
+  documentHash: string;
+  depositInvoiceId: Id | null;
+  createdAt: string;
+};
+
+export type InformeMensual = {
+  id: Id;
+  retainerId: Id | null;
+  companyId: Id | null;
+  /** «YYYY-MM» */
+  month: string;
+  status: 'borrador' | 'enviado';
+  sentAt: Fecha | null;
+  kpis: Record<string, number>;
+  prev: Record<string, number>;
+  summary: string;
+  next: string;
+  createdAt: string;
+};
+
+export type ClaveAutomatizacion = 'won' | 'signed' | 'approved' | 'lead' | 'overdue' | 'nudge' | 'retainer';
+export type Automatizacion = { id: Id; key: ClaveAutomatizacion; on: boolean; createdAt: string };
+/** Una ejecución de una automatización para algo concreto (`ref`): nunca dos veces lo mismo. */
+export type EjecucionAutomatizacion = { id: Id; key: ClaveAutomatizacion; ref: string; createdAt: string };
+
+export type CorreoEnviado = {
+  id: Id;
+  contactId: Id | null;
+  companyId: Id | null;
+  to: string;
+  subject: string;
+  body: string;
+  kind: string;
+  /** «simulado» = no hay servicio de correo configurado (o es la demo): no ha salido. */
+  status: 'enviado' | 'simulado' | 'error';
+  error: string;
+  createdAt: string;
+};
+
 /** Cronómetro en marcha de la persona. */
 export type Cronometro = { start: string; projectId: Id | null; retainerId: Id | null; taskId: Id | null; note: string };
 
@@ -347,6 +413,11 @@ export type Colecciones = {
   timeEntries: HoraTrabajada[];
   posts: Publicacion[];
   accesses: Acceso[];
+  contracts: Contrato[];
+  reports: InformeMensual[];
+  automations: Automatizacion[];
+  automationRuns: EjecucionAutomatizacion[];
+  outgoingEmails: CorreoEnviado[];
   /** Claves de avisos ya leídos (SPEC §7.9). */
   notificationReads: string[];
 };
@@ -373,6 +444,11 @@ export const NOMBRES_COLECCION: NombreColeccion[] = [
   'timeEntries',
   'posts',
   'accesses',
+  'contracts',
+  'reports',
+  'automations',
+  'automationRuns',
+  'outgoingEmails',
 ];
 
 export function coleccionesVacias(): Colecciones {
@@ -395,6 +471,11 @@ export function coleccionesVacias(): Colecciones {
     timeEntries: [],
     posts: [],
     accesses: [],
+    contracts: [],
+    reports: [],
+    automations: [],
+    automationRuns: [],
+    outgoingEmails: [],
     notificationReads: [],
   };
 }

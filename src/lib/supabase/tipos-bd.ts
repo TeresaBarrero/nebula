@@ -80,6 +80,46 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"automation_runs": {
+                  Row: {
+                    "created_at": string,"id": string,"key": string,"ref": string,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"key": string,"ref": string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"key"?: string,"ref"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "automation_runs_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"automations": {
+                  Row: {
+                    "created_at": string,"id": string,"key": string,"on": boolean,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"key": string,"on": boolean,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"key"?: string,"on"?: boolean,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "automations_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"companies": {
                   Row: {
                     "address": string,"brand": NonNullable<Json>,"created_at": string,"email": string,"id": string,"is_private": boolean,"name": string,"nif": string,"notes": string,"phone": string,"sector": string,"updated_at": string,"web": string,"workspace_id": string
@@ -124,6 +164,56 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "workspaces"
       referencedColumns: ["id"]
+    }
+                  ]
+                },"contracts": {
+                  Row: {
+                    "company_id": string | null,"contact_id": string | null,"created_at": string,"deposit": number,"deposit_invoice_id": string | null,"document_hash": string,"extra": string,"id": string,"ip": string,"portfolio": boolean,"project_id": string | null,"retainer_id": string | null,"scope": string,"sent_at": string | null,"signed_at": string | null,"signed_by": string,"signed_ip": string,"signed_text": string,"signed_user_agent": string,"status": string,"title": string,"type": string,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_id"?: string | null,"contact_id"?: string | null,"created_at"?: string,"deposit"?: number,"deposit_invoice_id"?: string | null,"document_hash"?: string,"extra"?: string,"id"?: string,"ip"?: string,"portfolio"?: boolean,"project_id"?: string | null,"retainer_id"?: string | null,"scope"?: string,"sent_at"?: string | null,"signed_at"?: string | null,"signed_by"?: string,"signed_ip"?: string,"signed_text"?: string,"signed_user_agent"?: string,"status"?: string,"title": string,"type"?: string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "company_id"?: string | null,"contact_id"?: string | null,"created_at"?: string,"deposit"?: number,"deposit_invoice_id"?: string | null,"document_hash"?: string,"extra"?: string,"id"?: string,"ip"?: string,"portfolio"?: boolean,"project_id"?: string | null,"retainer_id"?: string | null,"scope"?: string,"sent_at"?: string | null,"signed_at"?: string | null,"signed_by"?: string,"signed_ip"?: string,"signed_text"?: string,"signed_user_agent"?: string,"status"?: string,"title"?: string,"type"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "contracts_workspace_id_company_id_fkey"
+      columns: ["workspace_id","company_id"]
+isOneToOne: false
+      referencedRelation: "companies"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "contracts_workspace_id_contact_id_fkey"
+      columns: ["workspace_id","contact_id"]
+isOneToOne: false
+      referencedRelation: "contacts"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "contracts_workspace_id_deposit_invoice_id_fkey"
+      columns: ["workspace_id","deposit_invoice_id"]
+isOneToOne: false
+      referencedRelation: "invoices"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "contracts_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "contracts_workspace_id_project_id_fkey"
+      columns: ["workspace_id","project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "contracts_workspace_id_retainer_id_fkey"
+      columns: ["workspace_id","retainer_id"]
+isOneToOne: false
+      referencedRelation: "retainers"
+      referencedColumns: ["workspace_id","id"]
     }
                   ]
                 },"deals": {
@@ -426,16 +516,48 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"payments": {
+                },"outgoing_emails": {
                   Row: {
-                    "amount": number,"created_at": string,"date": string,"id": string,"invoice_id": string,"method": string,"updated_at": string,"workspace_id": string
+                    "body": string,"company_id": string | null,"contact_id": string | null,"created_at": string,"error": string,"id": string,"kind": string,"status": string,"subject": string,"to": string,"updated_at": string,"workspace_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount": number,"created_at"?: string,"date"?: string,"id"?: string,"invoice_id": string,"method"?: string,"updated_at"?: string,"workspace_id": string
+                    "body"?: string,"company_id"?: string | null,"contact_id"?: string | null,"created_at"?: string,"error"?: string,"id"?: string,"kind"?: string,"status"?: string,"subject": string,"to": string,"updated_at"?: string,"workspace_id": string
                   }
                   Update: {
-                    "amount"?: number,"created_at"?: string,"date"?: string,"id"?: string,"invoice_id"?: string,"method"?: string,"updated_at"?: string,"workspace_id"?: string
+                    "body"?: string,"company_id"?: string | null,"contact_id"?: string | null,"created_at"?: string,"error"?: string,"id"?: string,"kind"?: string,"status"?: string,"subject"?: string,"to"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "outgoing_emails_workspace_id_company_id_fkey"
+      columns: ["workspace_id","company_id"]
+isOneToOne: false
+      referencedRelation: "companies"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "outgoing_emails_workspace_id_contact_id_fkey"
+      columns: ["workspace_id","contact_id"]
+isOneToOne: false
+      referencedRelation: "contacts"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "outgoing_emails_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"payments": {
+                  Row: {
+                    "amount": number,"created_at": string,"date": string,"external_ref": string | null,"id": string,"invoice_id": string,"method": string,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount": number,"created_at"?: string,"date"?: string,"external_ref"?: string | null,"id"?: string,"invoice_id": string,"method"?: string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "amount"?: number,"created_at"?: string,"date"?: string,"external_ref"?: string | null,"id"?: string,"invoice_id"?: string,"method"?: string,"updated_at"?: string,"workspace_id"?: string
                   }
                   Relationships: [
                     {
@@ -450,6 +572,38 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "invoices"
       referencedColumns: ["workspace_id","id"]
+    }
+                  ]
+                },"portal_tokens": {
+                  Row: {
+                    "company_id": string,"contact_id": string | null,"created_at": string,"expires_at": string,"id": string,"last_used_at": string | null,"token_hash": string,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_id": string,"contact_id"?: string | null,"created_at"?: string,"expires_at": string,"id"?: string,"last_used_at"?: string | null,"token_hash": string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "company_id"?: string,"contact_id"?: string | null,"created_at"?: string,"expires_at"?: string,"id"?: string,"last_used_at"?: string | null,"token_hash"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "portal_tokens_workspace_id_company_id_fkey"
+      columns: ["workspace_id","company_id"]
+isOneToOne: false
+      referencedRelation: "companies"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "portal_tokens_workspace_id_contact_id_fkey"
+      columns: ["workspace_id","contact_id"]
+isOneToOne: false
+      referencedRelation: "contacts"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "portal_tokens_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
     }
                   ]
                 },"posts": {
@@ -550,6 +704,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"rate_limits": {
+                  Row: {
+                    "at": string,"bucket": string,"id": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "at"?: string,"bucket": string,"id"?: number
+                  }
+                  Update: {
+                    "at"?: string,"bucket"?: string,"id"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"renewals": {
                   Row: {
                     "company_id": string | null,"cost": number,"created_at": string,"id": string,"name": string,"price": number,"provider": string,"renew_date": string,"type": string,"updated_at": string,"workspace_id": string
@@ -574,6 +742,38 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "workspaces"
       referencedColumns: ["id"]
+    }
+                  ]
+                },"reports": {
+                  Row: {
+                    "company_id": string | null,"created_at": string,"id": string,"kpis": NonNullable<Json>,"month": string,"next": string,"prev": NonNullable<Json>,"retainer_id": string | null,"sent_at": string | null,"status": string,"summary": string,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_id"?: string | null,"created_at"?: string,"id"?: string,"kpis"?: NonNullable<Json>,"month": string,"next"?: string,"prev"?: NonNullable<Json>,"retainer_id"?: string | null,"sent_at"?: string | null,"status"?: string,"summary"?: string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "company_id"?: string | null,"created_at"?: string,"id"?: string,"kpis"?: NonNullable<Json>,"month"?: string,"next"?: string,"prev"?: NonNullable<Json>,"retainer_id"?: string | null,"sent_at"?: string | null,"status"?: string,"summary"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "reports_workspace_id_company_id_fkey"
+      columns: ["workspace_id","company_id"]
+isOneToOne: false
+      referencedRelation: "companies"
+      referencedColumns: ["workspace_id","id"]
+    },{
+      foreignKeyName: "reports_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "reports_workspace_id_retainer_id_fkey"
+      columns: ["workspace_id","retainer_id"]
+isOneToOne: false
+      referencedRelation: "retainers"
+      referencedColumns: ["workspace_id","id"]
     }
                   ]
                 },"retainers": {
@@ -712,14 +912,14 @@ isOneToOne: false
                   ]
                 },"workspace_settings": {
                   Row: {
-                    "address": string,"business": string,"capacity": number,"created_at": string,"disciplines": (string)[],"extra_round": number,"iban": string,"id": string,"irpf": number,"irpf_mode": string,"iva": number,"kind": string,"legal_name": string,"new_autonomo": boolean,"nif": string,"onboarded": boolean,"pay_days": number,"pay_online": NonNullable<Json>,"rate": number,"updated_at": string,"workspace_id": string
+                    "address": string,"booking": NonNullable<Json>,"business": string,"capacity": number,"created_at": string,"disciplines": (string)[],"extra_round": number,"iban": string,"id": string,"irpf": number,"irpf_mode": string,"iva": number,"kind": string,"lead_form_on": boolean,"legal_name": string,"new_autonomo": boolean,"nif": string,"onboarded": boolean,"pay_days": number,"pay_online": NonNullable<Json>,"public_slug": string | null,"rate": number,"updated_at": string,"workspace_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "address"?: string,"business"?: string,"capacity"?: number,"created_at"?: string,"disciplines"?: (string)[],"extra_round"?: number,"iban"?: string,"id"?: string,"irpf"?: number,"irpf_mode"?: string,"iva"?: number,"kind"?: string,"legal_name"?: string,"new_autonomo"?: boolean,"nif"?: string,"onboarded"?: boolean,"pay_days"?: number,"pay_online"?: NonNullable<Json>,"rate"?: number,"updated_at"?: string,"workspace_id": string
+                    "address"?: string,"booking"?: NonNullable<Json>,"business"?: string,"capacity"?: number,"created_at"?: string,"disciplines"?: (string)[],"extra_round"?: number,"iban"?: string,"id"?: string,"irpf"?: number,"irpf_mode"?: string,"iva"?: number,"kind"?: string,"lead_form_on"?: boolean,"legal_name"?: string,"new_autonomo"?: boolean,"nif"?: string,"onboarded"?: boolean,"pay_days"?: number,"pay_online"?: NonNullable<Json>,"public_slug"?: string | null,"rate"?: number,"updated_at"?: string,"workspace_id": string
                   }
                   Update: {
-                    "address"?: string,"business"?: string,"capacity"?: number,"created_at"?: string,"disciplines"?: (string)[],"extra_round"?: number,"iban"?: string,"id"?: string,"irpf"?: number,"irpf_mode"?: string,"iva"?: number,"kind"?: string,"legal_name"?: string,"new_autonomo"?: boolean,"nif"?: string,"onboarded"?: boolean,"pay_days"?: number,"pay_online"?: NonNullable<Json>,"rate"?: number,"updated_at"?: string,"workspace_id"?: string
+                    "address"?: string,"booking"?: NonNullable<Json>,"business"?: string,"capacity"?: number,"created_at"?: string,"disciplines"?: (string)[],"extra_round"?: number,"iban"?: string,"id"?: string,"irpf"?: number,"irpf_mode"?: string,"iva"?: number,"kind"?: string,"lead_form_on"?: boolean,"legal_name"?: string,"new_autonomo"?: boolean,"nif"?: string,"onboarded"?: boolean,"pay_days"?: number,"pay_online"?: NonNullable<Json>,"public_slug"?: string | null,"rate"?: number,"updated_at"?: string,"workspace_id"?: string
                   }
                   Relationships: [
                     {

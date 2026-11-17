@@ -20,6 +20,11 @@ export const TABLA: Record<NombreColeccion, string> = {
   timeEntries: 'time_entries',
   posts: 'posts',
   accesses: 'accesses',
+  contracts: 'contracts',
+  reports: 'reports',
+  automations: 'automations',
+  automationRuns: 'automation_runs',
+  outgoingEmails: 'outgoing_emails',
 };
 
 const aSnake = (k: string) => k.replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
@@ -31,7 +36,7 @@ const IGNORAR = new Set(['workspace_id', 'updated_at', 'password_enc']);
 const NO_COLUMNA = new Set(['collaborators', 'hasPassword', 'password']);
 
 /** Columnas numeric: por si llegan como texto, se convierten a número. */
-const NUMERICOS = new Set(['value', 'budget', 'hours_budget', 'rate', 'estimate', 'fee', 'hours', 'cost', 'price', 'iva', 'irpf', 'amount', 'base', 'iva_pct', 'size', 'minutes']);
+const NUMERICOS = new Set(['value', 'budget', 'hours_budget', 'rate', 'estimate', 'fee', 'hours', 'cost', 'price', 'iva', 'irpf', 'amount', 'base', 'iva_pct', 'size', 'minutes', 'deposit']);
 
 /** Fila de la base de datos → objeto de la app. */
 export function deFila(fila: Record<string, unknown>): Record<string, unknown> {

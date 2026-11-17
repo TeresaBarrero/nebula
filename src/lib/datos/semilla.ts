@@ -9,6 +9,11 @@ import { sumarDias } from '@/lib/reglas/fechas';
 import { nombreMes } from '@/lib/reglas/recurrentes';
 import type {
   Acceso,
+  Automatizacion,
+  Contrato,
+  CorreoEnviado,
+  EjecucionAutomatizacion,
+  InformeMensual,
   Brief,
   CasoPortfolio,
   HoraTrabajada,
@@ -452,8 +457,48 @@ export function semillaDemo(hoy: string): Colecciones {
     acceso('k5', 'co2', 'Mailchimp (newsletter interna)', 'mailchimp.com', 'comunicacion@ruizasociados.es', 'demo-mc-2026'),
   ];
 
+  // ───────── Fase 4 · Cliente ─────────
+  const contrato = (o: Partial<Contrato> & Pick<Contrato, 'id' | 'type' | 'title' | 'status'>): Contrato => ({
+    projectId: null, retainerId: null, companyId: null, contactId: null, deposit: 0, ip: 'cesion', portfolio: true, scope: '', extra: '',
+    sentAt: null, signedAt: null, signedBy: '', signedIp: '', signedUserAgent: '', signedText: '', documentHash: '', depositInvoiceId: null, createdAt: creado(-60), ...o,
+  });
+  const firmadoEl = (d: number, quien: string): Partial<Contrato> => ({
+    signedAt: `${D(d)}T11:20:00.000Z`, signedBy: quien, signedIp: 'ejemplo', signedUserAgent: 'Datos de ejemplo de la demo', documentHash: 'ejemplo',
+  });
+  const contracts: Contrato[] = [
+    contrato({ id: 'k1', type: 'proyecto', title: 'Contrato · Web corporativa Estudio Alba', projectId: 'p1', companyId: 'co1', contactId: 'c1', deposit: 25, status: 'firmado', sentAt: D(-31), ...firmadoEl(-30, 'Lucía Fernández') }),
+    contrato({ id: 'k2', type: 'proyecto', title: 'Contrato · Identidad de marca La Espiga', projectId: 'p2', companyId: 'co3', contactId: 'c3', deposit: 30, status: 'firmado', sentAt: D(-11), ...firmadoEl(-10, 'Carmen Vidal') }),
+    contrato({ id: 'k3', type: 'proyecto', title: 'Contrato · Lanzamiento app Pulso', projectId: 'p6', companyId: 'co7', contactId: 'c8', deposit: 30, status: 'enviado', sentAt: D(-4) }),
+    contrato({ id: 'k4', type: 'iguala', title: 'Contrato · Redes sociales mensual', retainerId: 'r1', companyId: 'co5', contactId: 'c5', ip: 'licencia', status: 'firmado', sentAt: D(-201), ...firmadoEl(-200, 'Elena Sanz') }),
+    contrato({ id: 'k5', type: 'proyecto', title: 'Contrato · Comunicación interna temporada 2027', projectId: 'p7', companyId: 'co6', contactId: 'c7', deposit: 30, portfolio: false, status: 'borrador' }),
+    contrato({ id: 'k6', type: 'colaborador', title: 'Encargo y confidencialidad · Jordi Puig', contactId: 'c14', ip: 'colaborador', status: 'firmado', sentAt: D(-151), ...firmadoEl(-150, 'Jordi Puig'), scope: 'Redacción de textos para proyectos de clientes (newsletters, webs y campañas).' }),
+  ];
+
+  const mesAnt = sumarDias(`${hoy.slice(0, 7)}-01`, -1).slice(0, 7);
+  const reports: InformeMensual[] = [
+    {
+      id: 'rp1', retainerId: 'r1', companyId: 'co5', month: mesAnt, status: 'enviado', sentAt: D(-10),
+      kpis: { alcance: 41200, seguidores: 3820, interacciones: 2950, clics: 410, contactos: 38 },
+      prev: { alcance: 35600, seguidores: 3710, interacciones: 2400, clics: 350, contactos: 31 },
+      summary: 'Mes muy bueno: el reel del equipo fue la publicación con más alcance del año y las citas desde Instagram subieron un 23 %.',
+      next: 'En diciembre: campaña de revisión gratuita, sorteo de Navidad y un carrusel sobre ortodoncia invisible.', createdAt: creado(-12),
+    },
+  ];
+
+  const automations: Automatizacion[] = (['won', 'signed', 'approved', 'lead', 'overdue', 'nudge', 'retainer'] as const).map((key) => ({ id: `au-${key}`, key, on: key !== 'retainer', createdAt: creado(-200) }));
+  const automationRuns: EjecucionAutomatizacion[] = [];
+  for (const [key, veces, ultima] of [['won', 4, -12], ['signed', 3, -10], ['approved', 2, -50], ['lead', 6, -1], ['overdue', 9, -3], ['nudge', 5, -2]] as const)
+    for (let k = 0; k < veces; k++) automationRuns.push({ id: `run-${key}-${k}`, key, ref: `ejemplo-${k}`, createdAt: `${D(ultima - (veces - 1 - k) * 9)}T08:00:00.000Z` });
+
+  const outgoingEmails: CorreoEnviado[] = [
+    { id: 'm1', contactId: 'c8', companyId: 'co7', to: 'andres@pulsogym.es', subject: 'Contrato para firmar: Contrato · Lanzamiento app Pulso', body: 'Hola Andrés:\n\nTe envío el contrato…', kind: 'contrato', status: 'simulado', error: '', createdAt: `${D(-4)}T10:00:00.000Z` },
+    { id: 'm2', contactId: 'c11', companyId: 'co2', to: 'isoler@ruizasociados.es', subject: 'Recordatorio: factura pendiente', body: 'Hola Irene:\n\nLa factura venció…', kind: 'recordatorio', status: 'simulado', error: '', createdAt: `${D(-3)}T08:00:00.000Z` },
+  ];
+  events.push({ id: 'e10', title: 'Llamada de descubrimiento · Clínica Veterinaria Huellas', date: D(3), time: '12:00', contactId: null, projectId: null, source: 'reserva', createdAt: creado(-1) });
+
   return {
     companies, contacts, deals, projects, deliverables, tasks, events, notes, activities, files,
-    retainers, renewals, invoices, payments, expenses, timeEntries, posts, accesses, notificationReads: [],
+    retainers, renewals, invoices, payments, expenses, timeEntries, posts, accesses,
+    contracts, reports, automations, automationRuns, outgoingEmails, notificationReads: [],
   };
 }
