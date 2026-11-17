@@ -53,8 +53,11 @@ export function historial(c: Colecciones, f: Filtro, hoy: Fecha): ElementoHistor
       texto: `${f.lines[0]?.desc ?? ''} · ${eur(totales(f).total)}`,
     });
   for (const v of c.deliverables.filter(es)) {
-    if (v.sentAt) out.push({ clave: 'vs' + v.id, fecha: v.sentAt, icono: 'send', cls: 'butter', titulo: 'Entregable enviado', texto: v.name });
-    if (v.approvedAt) out.push({ clave: 'va' + v.id, fecha: v.approvedAt, icono: 'tick', cls: 'sage', titulo: 'Entregable aprobado', texto: v.name });
+    const versiones = v.versions ?? [];
+    for (const x of versiones) out.push({ clave: `vs${v.id}-${x.v}`, fecha: x.date, icono: 'send', cls: 'butter', titulo: `Entregable enviado · v${x.v}`, texto: v.name });
+    if (!versiones.length && v.sentAt) out.push({ clave: 'vs' + v.id, fecha: v.sentAt, icono: 'send', cls: 'butter', titulo: 'Entregable enviado', texto: v.name });
+    (v.feedback ?? []).forEach((f, k) => out.push({ clave: `vf${v.id}-${k}`, fecha: f.date, icono: 'talk', cls: 'peach', titulo: `El cliente pide cambios · ronda ${k + 1}`, texto: `${v.name}: ${f.text}` }));
+    if (v.status === 'aprobado' && v.approvedAt) out.push({ clave: 'va' + v.id, fecha: v.approvedAt, icono: 'tick', cls: 'sage', titulo: 'Entregable aprobado', texto: v.name });
   }
   for (const d of c.files.filter(es)) out.push({ clave: 'f' + d.id, fecha: d.date, icono: 'paperclip', cls: 'mist', titulo: 'Documento añadido', texto: d.name });
 

@@ -6,9 +6,10 @@ import { eur, eur2 } from './dinero';
 import { estadoDe, totalesDe } from './facturas';
 import { empresaDe, ultimoContacto } from './historial';
 import { igualaPorFacturar, mesDe } from './recurrentes';
+import { briefDe, minutosIguala, rondasDe } from './trabajo';
 
 /** A dónde lleva pulsar un aviso: una página o el formulario de algo. */
-export type Destino = { ruta: string } | { formulario: 'task' | 'deal' | 'event' | 'note' | 'expense' | 'retainer' | 'renewal'; id: string };
+export type Destino = { ruta: string } | { formulario: 'task' | 'deal' | 'event' | 'note' | 'expense' | 'retainer' | 'renewal' | 'post' | 'time'; id: string };
 
 export type Aviso = { clave: string; icono: NombreIcono; cls: Pastel; texto: string; sub: string; destino: Destino };
 
@@ -17,8 +18,8 @@ const dias = (n: number) => `${n} ${n === 1 ? 'día' : 'días'}`;
 /**
  * Avisos de la campana (SPEC §7.9). Se calculan cada vez a partir de los datos.
  * La clave incluye la fecha que lo provoca: si cambia (p. ej. se aplaza la tarea), vuelve a salir como no leído.
- * Salen los de tareas, reuniones, entregables, oportunidades, contactos, facturas, igualas y renovaciones;
- * los de contratos, briefings, rondas y contenidos llegan con sus fases.
+ * Salen los de tareas, reuniones, entregables, rondas, briefings, contenidos, oportunidades, contactos, facturas,
+ * igualas y renovaciones; los de contratos e informes mensuales llegan en la Fase 4.
  */
 export function calcularAvisos(c: Colecciones, hoy: Fecha): Aviso[] {
   const out: Aviso[] = [];
@@ -40,6 +41,23 @@ export function calcularAvisos(c: Colecciones, hoy: Fecha): Aviso[] {
     if (v.status === 'enviado' && v.sentAt && d(v.sentAt) <= -5)
       out.push({ clave: `dw-${v.id}-${v.sentAt}`, icono: 'send', cls: 'butter', texto: `Llevas ${dias(-d(v.sentAt))} esperando respuesta: ${v.name}`, sub: proyecto(v.projectId)?.name ?? '', destino: { ruta: `/proyectos?p=${v.projectId}` } });
 
+  for (const v of c.deliverables) {
+    const r = rondasDe(v, proyecto(v.projectId));
+    if (r.porCobrar > 0)
+      out.push({ clave: `dx-${v.id}-${r.extra}`, icono: 'euro', cls: 'rose', texto: `Ronda de cambios extra sin cobrar: ${v.name}`, sub: proyecto(v.projectId)?.name ?? '', destino: { ruta: `/proyectos?p=${v.projectId}` } });
+  }
+  for (const p of c.projects) {
+    const b = briefDe(p);
+    if (b.status === 'enviado' && b.sentDate && d(b.sentDate) <= -3)
+      out.push({ clave: `br-${p.id}-${b.sentDate}`, icono: 'brief', cls: 'lilac', texto: 'El cliente aún no ha rellenado el briefing', sub: p.name, destino: { ruta: `/proyectos?p=${p.id}` } });
+  }
+  for (const x of c.posts)
+    if ((d(x.date) === 0 || d(x.date) === 1) && x.status !== 'programado' && x.status !== 'publicado')
+      out.push({
+        clave: `po-${x.id}-${x.date}`, icono: 'megaphone', cls: 'peach', texto: `Publicación sin preparar: ${x.title}`,
+        sub: `${c.companies.find((e) => e.id === x.companyId)?.name ?? 'Mi marca'} · ${relativa(x.date, hoy)}`, destino: { formulario: 'post', id: x.id },
+      });
+
   for (const o of c.deals)
     if (FASES_ABIERTAS.includes(o.stage) && o.expected && d(o.expected) < 0)
       out.push({ clave: `deal-${o.id}-${o.expected}`, icono: 'funnel', cls: 'butter', texto: `Oportunidad sin decidir: ${o.title}`, sub: `Esperabas respuesta ${relativa(o.expected, hoy).toLowerCase()}`, destino: { formulario: 'deal', id: o.id } });
@@ -54,6 +72,11 @@ export function calcularAvisos(c: Colecciones, hoy: Fecha): Aviso[] {
   for (const r of c.retainers)
     if (igualaPorFacturar(r, hoy))
       out.push({ clave: `rb-${r.id}-${mesDe(hoy)}`, icono: 'repeat', cls: 'lilac', texto: `Toca facturar la iguala: ${r.name}`, sub: `${empresa(r.companyId)} · ${eur(r.fee)}`, destino: { ruta: '/igualas' } });
+  for (const r of c.retainers) {
+    const min = minutosIguala(c, r, hoy);
+    if (r.active && r.hours && min / 60 >= r.hours * 0.9)
+      out.push({ clave: `rh-${r.id}-${mesDe(hoy)}`, icono: 'timer', cls: 'peach', texto: `La iguala «${r.name}» ha gastado el ${Math.round((min / 60 / r.hours) * 100)} % de sus horas`, sub: empresa(r.companyId), destino: { ruta: '/igualas' } });
+  }
   for (const n of c.renewals)
     if (d(n.renewDate) <= 15)
       out.push({

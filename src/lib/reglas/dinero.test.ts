@@ -293,7 +293,7 @@ describe('Informes', () => {
     expect(m.at(-1)!.ingresos).toBe(1800 + 400 + 600 + 650);
   });
   it('por disciplina, por proyecto y mejores clientes', () => {
-    expect(porDisciplina(c, HOY).slice(0, 2)).toEqual([
+    expect(porDisciplina(c, HOY).slice(0, 2)).toMatchObject([
       { k: 'grafico', facturado: 1600 + 1600 },
       { k: 'web', facturado: 1200 + 150 + 1800 },
     ]);

@@ -18,8 +18,13 @@ export type Empresa = {
   notes: string;
   /** Particular → sin retención de IRPF (SPEC §7.4). */
   isPrivate: boolean;
+  /** Kit de marca (Fase 3). Puede faltar en datos antiguos: usar marcaDe(). */
+  brand?: Marca;
   createdAt: string;
 };
+
+/** Kit de marca de una empresa (SPEC §4.2). `colors`: códigos HEX separados por comas. */
+export type Marca = { colors: string; fonts: string; tone: string; manual: string };
 
 export type TipoContacto = 'Cliente' | 'Proveedor' | 'Colaborador' | 'Otro';
 export type EstadoContacto = 'activo' | 'potencial' | 'inactivo';
@@ -87,8 +92,16 @@ export type Proyecto = {
   tags: string[];
   /** Ids de contactos colaboradores (tabla puente project_collaborators). */
   collaborators: Id[];
+  /** Briefing (Fase 3). Puede faltar en datos antiguos: usar briefDe(). */
+  brief?: Brief;
+  /** Caso de éxito para el portfolio (Fase 3). Usar portfolioDe(). */
+  portfolio?: CasoPortfolio;
   createdAt: string;
 };
+
+export type EstadoBrief = 'pendiente' | 'enviado' | 'completado';
+export type Brief = { status: EstadoBrief; sentDate: Fecha | null; answers: Record<string, string> };
+export type CasoPortfolio = { featured: boolean; permission: boolean; summary: string; results: string; link: string };
 
 export type EstadoEntregable = 'en_curso' | 'enviado' | 'cambios' | 'aprobado';
 
@@ -99,7 +112,12 @@ export type Entregable = {
   status: EstadoEntregable;
   sentAt: Fecha | null;
   approvedAt: Fecha | null;
+  /** Nº de rondas extra ya cobradas. */
   billedExtra: number;
+  /** Versiones enviadas (Fase 3). */
+  versions?: { v: number; date: Fecha }[];
+  /** Cada elemento es una ronda de cambios pedida por el cliente. */
+  feedback?: { date: Fecha; text: string }[];
   createdAt: string;
 };
 
@@ -264,6 +282,52 @@ export type Renovacion = {
   createdAt: string;
 };
 
+// ───────── Fase 3 · Trabajo creativo (SPEC §4.13–4.15) ─────────
+
+export type HoraTrabajada = {
+  id: Id;
+  date: Fecha;
+  minutes: number;
+  projectId: Id | null;
+  retainerId: Id | null;
+  taskId: Id | null;
+  note: string;
+  /** false = trabajo interno (administración, ventas, formación…). */
+  billable: boolean;
+  createdAt: string;
+};
+
+export type Canal = 'instagram' | 'linkedin' | 'tiktok' | 'facebook' | 'blog' | 'newsletter' | 'prensa' | 'interna';
+export type EstadoPublicacion = 'idea' | 'borrador' | 'revision' | 'aprobado' | 'programado' | 'publicado';
+export type Publicacion = {
+  id: Id;
+  /** null = mi marca. */
+  companyId: Id | null;
+  channel: Canal;
+  date: Fecha;
+  time: string;
+  title: string;
+  copy: string;
+  status: EstadoPublicacion;
+  createdAt: string;
+};
+
+/** Acceso de un cliente. La contraseña nunca viaja en la lista: se pide con verClave(). */
+export type Acceso = {
+  id: Id;
+  companyId: Id | null;
+  service: string;
+  url: string;
+  username: string;
+  hasPassword: boolean;
+  /** Solo al guardar: contraseña nueva (undefined = no cambiarla; '' = quitarla). */
+  password?: string;
+  createdAt: string;
+};
+
+/** Cronómetro en marcha de la persona. */
+export type Cronometro = { start: string; projectId: Id | null; retainerId: Id | null; taskId: Id | null; note: string };
+
 export type Colecciones = {
   companies: Empresa[];
   contacts: Contacto[];
@@ -280,6 +344,9 @@ export type Colecciones = {
   invoices: Factura[];
   payments: Pago[];
   expenses: Gasto[];
+  timeEntries: HoraTrabajada[];
+  posts: Publicacion[];
+  accesses: Acceso[];
   /** Claves de avisos ya leídos (SPEC §7.9). */
   notificationReads: string[];
 };
@@ -303,6 +370,9 @@ export const NOMBRES_COLECCION: NombreColeccion[] = [
   'invoices',
   'payments',
   'expenses',
+  'timeEntries',
+  'posts',
+  'accesses',
 ];
 
 export function coleccionesVacias(): Colecciones {
@@ -322,6 +392,9 @@ export function coleccionesVacias(): Colecciones {
     invoices: [],
     payments: [],
     expenses: [],
+    timeEntries: [],
+    posts: [],
+    accesses: [],
     notificationReads: [],
   };
 }

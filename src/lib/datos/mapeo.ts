@@ -17,18 +17,21 @@ export const TABLA: Record<NombreColeccion, string> = {
   invoices: 'invoices',
   payments: 'payments',
   expenses: 'expenses',
+  timeEntries: 'time_entries',
+  posts: 'posts',
+  accesses: 'accesses',
 };
 
 const aSnake = (k: string) => k.replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
 const aCamel = (k: string) => k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
 
 /** Columnas de la base de datos que la app aún no usa (se dejan en paz). */
-const IGNORAR = new Set(['workspace_id', 'updated_at', 'brand', 'brief', 'portfolio']);
+const IGNORAR = new Set(['workspace_id', 'updated_at', 'password_enc']);
 /** Campos de la app que no son columnas (se guardan aparte). */
-const NO_COLUMNA = new Set(['collaborators']);
+const NO_COLUMNA = new Set(['collaborators', 'hasPassword', 'password']);
 
 /** Columnas numeric: por si llegan como texto, se convierten a número. */
-const NUMERICOS = new Set(['value', 'budget', 'hours_budget', 'rate', 'estimate', 'fee', 'hours', 'cost', 'price', 'iva', 'irpf', 'amount', 'base', 'iva_pct', 'size']);
+const NUMERICOS = new Set(['value', 'budget', 'hours_budget', 'rate', 'estimate', 'fee', 'hours', 'cost', 'price', 'iva', 'irpf', 'amount', 'base', 'iva_pct', 'size', 'minutes']);
 
 /** Fila de la base de datos → objeto de la app. */
 export function deFila(fila: Record<string, unknown>): Record<string, unknown> {

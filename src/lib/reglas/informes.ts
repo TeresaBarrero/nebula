@@ -30,16 +30,24 @@ function disciplinaDe(c: Pick<Colecciones, 'projects' | 'retainers'>, f: { proje
   return c.projects.find((p) => p.id === f.projectId)?.discipline ?? c.retainers.find((r) => r.id === f.retainerId)?.discipline ?? null;
 }
 
-/** Facturado por disciplina en los últimos 180 días (las horas y el €/h real llegan con el cronómetro, Fase 3). */
-export function porDisciplina(c: Pick<Colecciones, 'invoices' | 'projects' | 'retainers'>, hoy: Fecha) {
+/** Facturado, horas y € por hora real por disciplina en los últimos 180 días. */
+export function porDisciplina(c: Pick<Colecciones, 'invoices' | 'projects' | 'retainers'> & Partial<Pick<Colecciones, 'timeEntries'>>, hoy: Fecha) {
   const desde = sumarDias(hoy, -180);
-  const suma = new Map<Disciplina, number>();
+  const suma = new Map<Disciplina, { facturado: number; min: number }>();
+  const de = (d: Disciplina) => suma.get(d) ?? suma.set(d, { facturado: 0, min: 0 }).get(d)!;
   for (const f of emitidas(c.invoices)) {
     if (f.date < desde) continue;
     const d = disciplinaDe(c, f);
-    if (d) suma.set(d, r2((suma.get(d) ?? 0) + totales(f).base));
+    if (d) de(d).facturado = r2(de(d).facturado + totales(f).base);
   }
-  return [...suma.entries()].map(([k, facturado]) => ({ k, facturado })).sort((a, b) => b.facturado - a.facturado);
+  for (const e of c.timeEntries ?? []) {
+    if (e.date < desde) continue;
+    const d = disciplinaDe(c, e);
+    if (d) de(d).min += e.minutes;
+  }
+  return [...suma.entries()]
+    .map(([k, x]) => ({ k, facturado: x.facturado, min: x.min, eurh: x.min ? r2(x.facturado / (x.min / 60)) : 0 }))
+    .sort((a, b) => b.facturado - a.facturado);
 }
 
 /** Lo que te deja cada proyecto con facturas o gastos, de más a menos margen. */

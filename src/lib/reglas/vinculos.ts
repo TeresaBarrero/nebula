@@ -15,6 +15,8 @@ const VINCULOS: Partial<Record<NombreColeccion, Vinculo[]>> = {
     { col: 'retainers', campo: 'companyId', alBorrar: 'null' },
     { col: 'renewals', campo: 'companyId', alBorrar: 'cascada' },
     { col: 'invoices', campo: 'companyId', alBorrar: 'null' },
+    { col: 'posts', campo: 'companyId', alBorrar: 'cascada' },
+    { col: 'accesses', campo: 'companyId', alBorrar: 'cascada' },
   ],
   contacts: [
     { col: 'projects', campo: 'contactId', alBorrar: 'null' },
@@ -39,14 +41,21 @@ const VINCULOS: Partial<Record<NombreColeccion, Vinculo[]>> = {
     { col: 'deliverables', campo: 'projectId', alBorrar: 'cascada' },
     { col: 'invoices', campo: 'projectId', alBorrar: 'null' },
     { col: 'expenses', campo: 'projectId', alBorrar: 'null' },
+    { col: 'timeEntries', campo: 'projectId', alBorrar: 'null' },
   ],
   deals: [{ col: 'invoices', campo: 'dealId', alBorrar: 'null' }],
-  retainers: [{ col: 'invoices', campo: 'retainerId', alBorrar: 'null' }],
+  retainers: [
+    { col: 'invoices', campo: 'retainerId', alBorrar: 'null' },
+    { col: 'timeEntries', campo: 'retainerId', alBorrar: 'null' },
+  ],
   invoices: [
     { col: 'payments', campo: 'invoiceId', alBorrar: 'cascada' },
     { col: 'invoices', campo: 'fromQuoteId', alBorrar: 'null' },
   ],
-  tasks: [{ col: 'tasks', campo: 'blockedBy', alBorrar: 'null' }],
+  tasks: [
+    { col: 'tasks', campo: 'blockedBy', alBorrar: 'null' },
+    { col: 'timeEntries', campo: 'taskId', alBorrar: 'null' },
+  ],
 };
 
 type Fila = { id: Id } & Record<string, unknown>;

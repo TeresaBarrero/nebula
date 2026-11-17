@@ -240,7 +240,7 @@ describe('Historial y datos', () => {
   it('el historial del proyecto incluye entregables enviados y aprobados', () => {
     const h = historial(datos(), { projectId: 'p1' }, HOY);
     expect(h.some((x) => x.titulo === 'Entregable aprobado' && x.texto === 'Wireframes')).toBe(true);
-    expect(h.some((x) => x.titulo === 'Entregable enviado' && x.texto === 'Diseño UI · home e interiores')).toBe(true);
+    expect(h.some((x) => x.titulo === 'Entregable enviado · v1' && x.texto === 'Diseño UI · home e interiores')).toBe(true);
   });
   it('la demo crea varias filas de una vez', async () => {
     const mapa = new Map<string, string>();

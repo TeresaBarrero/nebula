@@ -8,6 +8,12 @@ import { r2 } from '@/lib/reglas/dinero';
 import { sumarDias } from '@/lib/reglas/fechas';
 import { nombreMes } from '@/lib/reglas/recurrentes';
 import type {
+  Acceso,
+  Brief,
+  CasoPortfolio,
+  HoraTrabajada,
+  Marca,
+  Publicacion,
   Apunte,
   Colecciones,
   Contacto,
@@ -314,8 +320,140 @@ export function semillaDemo(hoy: string): Colecciones {
     gasto('x7', -7, 'Jordi Puig', 'Textos de la campaña interna', 'Colaboradores', 240, 21, { contactId: 'c14', projectId: 'p7' }),
   );
 
+  // ───────── Fase 3 · Trabajo creativo ─────────
+  // Kit de marca de cada empresa.
+  const marcas: Record<string, Marca> = {
+    co1: { colors: '#2F3E46, #84A98C, #CAD2C5, #F4F1DE', fonts: 'Títulos: Playfair Display · Texto: Inter', tone: 'Sobrio, técnico y cercano. Sin superlativos.', manual: 'Manual_marca_Alba.pdf' },
+    co2: { colors: '#14213D, #FCA311, #E5E5E5', fonts: 'Libre Baskerville', tone: 'Formal y claro. Evitar tecnicismos jurídicos.', manual: '' },
+    co3: { colors: '#A0522D, #F3E9DC, #6B8F71', fonts: 'Pendiente de definir', tone: 'Artesano, cálido, de barrio.', manual: '' },
+    co4: { colors: '#D62828, #003049, #EAE2B7', fonts: 'Títulos: Archivo Black · Texto: Archivo', tone: 'Directo y artesano.', manual: 'Manual_Ortega.pdf' },
+    co5: { colors: '#0E7C86, #E0F2F1, #FFB703', fonts: 'Poppins', tone: 'Cercano y tranquilizador. Tuteamos al paciente.', manual: '' },
+    co6: { colors: '#1D3557, #F1FAEE, #E63946', fonts: 'Títulos: Cormorant · Texto: Lato', tone: 'Elegante y mediterráneo.', manual: 'Brandbook_Mirador.pdf' },
+  };
+  for (const e of companies) e.brand = marcas[e.id] ?? { colors: '', fonts: '', tone: '', manual: '' };
+
+  // Briefings y casos de éxito.
+  const hecho = (answers: Record<string, string>): Brief => ({ status: 'completado', sentDate: null, answers });
+  const briefs: Record<string, Brief> = {
+    p1: hecho({
+      objective: 'Conseguir más visitas a la oficina y mostrar mejor los proyectos.', audience: 'Familias y promotoras que buscan arquitectura sostenible.', tone: 'Sobrio y cercano.',
+      references: 'Le gustan webs con mucha fotografía y poco texto.', deliverables: 'Web en WordPress con portfolio y reservas.', budgetRange: '4.000–5.000 €',
+      deadline: 'Antes de diciembre, por una feria del sector.', pages: 'Inicio, estudio, proyectos, blog, contacto y reservas.', content: 'Ellos aportan fotos; los textos los hacemos nosotros.',
+    }),
+    p2: hecho({ objective: 'Modernizar la marca sin perder lo artesano.', audience: 'Vecinos del barrio y turistas.', tone: 'Cálido, artesano.', references: 'Tonos tierra, tipografías con carácter.', deliverables: 'Logotipo, paleta, bolsas, etiquetas y rótulo.', values: 'Tradición, cercanía, producto local.' }),
+    p3: hecho({ objective: '40 contactos de ortodoncia al mes.', audience: 'Adultos de 25 a 45 años en Sevilla.', kpis: 'Coste por contacto por debajo de 15 €.' }),
+    p4: hecho({ objective: 'Vender paquetes de temporada a agencias.' }),
+    p5: { status: 'pendiente', sentDate: null, answers: {} },
+    p6: { status: 'enviado', sentDate: D(-4), answers: {} },
+    p7: hecho({ objective: 'Que el equipo conozca los cambios de la temporada.', teams: '60 personas en 4 departamentos.', channels: 'Tablón, grupo de WhatsApp y reuniones de turno.' }),
+    p8: hecho({}),
+  };
+  const sinCaso: CasoPortfolio = { featured: false, permission: false, summary: '', results: '', link: '' };
+  const casos: Record<string, CasoPortfolio> = {
+    p4: { featured: true, permission: true, summary: 'Catálogo de 48 páginas con fotografía propia para la temporada 2026.', results: '+22 % de reservas directas durante la temporada', link: '' },
+    p8: { featured: true, permission: false, summary: 'Renovación de logotipo y papelería para una imprenta familiar fundada en 1978.', results: 'Nueva marca aplicada en 12 soportes', link: '' },
+  };
+  for (const p of projects) {
+    p.brief = briefs[p.id] ?? { status: 'pendiente', sentDate: null, answers: {} };
+    p.portfolio = casos[p.id] ?? { ...sinCaso };
+  }
+
+  // Versiones enviadas y rondas de cambios de cada entregable.
+  const V = (...dias: number[]) => dias.map((d, i) => ({ v: i + 1, date: D(d) }));
+  const R = (...rondas: [number, string][]) => rondas.map(([d, text]) => ({ date: D(d), text }));
+  const historiaEntregables: Record<string, Pick<Entregable, 'versions' | 'feedback'>> = {
+    v1: { versions: V(-20, -15), feedback: R([-17, 'Subir el bloque de reservas a la primera pantalla.']) },
+    v2: { versions: V(-6), feedback: [] },
+    v4: { versions: V(-8), feedback: [] },
+    v5: { versions: V(-5, -3, -1), feedback: R([-4, 'Probar una versión con la espiga más simple.'], [-2, 'Nos quedamos con la B, pero con un marrón más cálido.']) },
+    v6: { versions: V(-20, -14, -8, -2), feedback: R([-17, 'Cambiar las fotos por pacientes reales.'], [-11, 'El texto es demasiado largo.'], [-5, 'Probar el botón en amarillo.']) },
+    v8: { versions: V(-70, -60), feedback: R([-65, 'Ajustar precios de la página 12.']) },
+    v9: { versions: V(-2), feedback: [] },
+  };
+  for (const v of deliverables) Object.assign(v, historiaEntregables[v.id] ?? { versions: [], feedback: [] });
+
+  // Horas trabajadas: generadas siempre igual (como el prototipo), en días laborables de las últimas 5 semanas.
+  let semillaAzar = 11;
+  const azar = () => (semillaAzar = (semillaAzar * 9301 + 49297) % 233280) / 233280;
+  type Destino = ['p' | 'r', string, number, string[]];
+  const destinos: Destino[] = [
+    ['p', 'p1', 4, ['Diseño de interiores', 'Maquetación de la home', 'Reunión de seguimiento', 'Ajustes de wireframes']],
+    ['p', 'p2', 2, ['Bocetos de logotipo', 'Moodboard', 'Exploración tipográfica']],
+    ['p', 'p3', 2, ['Creatividades de anuncios', 'Optimización de campañas', 'Ajustes de segmentación']],
+    ['p', 'p7', 1, ['Concepto de campaña', 'Textos de la newsletter']],
+    ['p', 'p6', 1, ['Preparación del briefing']],
+    ['r', 'r1', 3, ['Diseño de piezas para Instagram', 'Programación de publicaciones', 'Stories de la semana']],
+    ['r', 'r2', 1, ['Actualización de plugins', 'Cambios en la página de servicios']],
+    ['r', 'r3', 1, ['Redacción de la newsletter', 'Maquetación de la newsletter']],
+  ];
+  const bolsa = destinos.flatMap((d) => Array<Destino>(d[2]).fill(d));
+  const timeEntries: HoraTrabajada[] = [];
+  const hora = (date: string, minutes: number, o: Partial<HoraTrabajada>): HoraTrabajada => ({
+    id: `h${timeEntries.length + 1}`, date, minutes, projectId: null, retainerId: null, taskId: null, note: '', billable: true, createdAt: `${date}T18:00:00.000Z`, ...o,
+  });
+  for (let d = -34; d <= 0; d++) {
+    const date = D(d);
+    const dia = new Date(`${date}T12:00:00`).getDay();
+    if (dia === 0 || dia === 6) continue;
+    if (dia === 1) timeEntries.push(hora(date, 45, { note: 'Administración y facturas', billable: false }));
+    const n = 2 + Math.floor(azar() * 2);
+    for (let i = 0; i < n; i++) {
+      const t = bolsa[Math.floor(azar() * bolsa.length)];
+      const minutes = [30, 45, 60, 90, 120, 150, 180][Math.floor(azar() * 7)];
+      timeEntries.push(hora(date, minutes, { projectId: t[0] === 'p' ? t[1] : null, retainerId: t[0] === 'r' ? t[1] : null, note: t[3][Math.floor(azar() * t[3].length)] }));
+    }
+  }
+  for (let k = 0; k < 11; k++) timeEntries.push(hora(D(-150 + k * 9), 390, { projectId: 'p4', note: 'Diseño y maquetación del catálogo' }));
+  for (let k = 0; k < 5; k++) timeEntries.push(hora(D(-250 + k * 9), 420, { projectId: 'p8', note: 'Identidad visual' }));
+
+  // Contenidos.
+  const posts: Publicacion[] = [];
+  const pub = (companyId: string | null, channel: Publicacion['channel'], date: string, time: string, title: string, status: Publicacion['status'], copy = '') =>
+    posts.push({ id: `po${posts.length + 1}`, companyId, channel, date, time, title, status, copy, createdAt: creado(-20) });
+  pub('co5', 'instagram', D(-6), '13:00', 'Consejos para cuidar tus encías', 'publicado');
+  pub('co5', 'instagram', D(-3), '13:00', 'Antes y después: blanqueamiento', 'publicado');
+  pub('co5', 'facebook', D(-2), '10:00', 'Horario de Navidad', 'publicado');
+  pub('co5', 'instagram', D(0), '13:00', '5 mitos sobre la ortodoncia', 'programado', '¿Ortodoncia solo para niños? Te contamos 5 mitos que no son verdad 👇');
+  pub('co5', 'instagram', D(2), '13:00', 'Conoce a nuestro equipo de higiene', 'aprobado');
+  pub('co5', 'instagram', D(4), '19:00', 'Reel: un día en la clínica', 'revision');
+  pub('co5', 'instagram', D(7), '13:00', 'Revisión gratuita en diciembre', 'borrador');
+  pub('co5', 'facebook', D(9), '10:00', 'Sorteo de Navidad', 'idea');
+  pub('co5', 'instagram', D(11), '13:00', 'Carrusel: ortodoncia invisible', 'borrador');
+  pub('co2', 'interna', D(-11), '09:00', 'Newsletter interna de noviembre', 'publicado');
+  pub('co2', 'interna', D(6), '09:00', 'Cartel: cena de empresa', 'revision');
+  pub('co2', 'interna', D(18), '09:00', 'Newsletter interna de diciembre', 'borrador');
+  pub('co1', 'blog', D(5), '08:00', 'Claves de la arquitectura bioclimática', 'borrador');
+  pub('co1', 'linkedin', D(8), '09:30', 'Lanzamiento de la nueva web', 'idea');
+  pub('co6', 'prensa', D(15), '10:00', 'Nota de prensa: reapertura de temporada', 'borrador');
+  pub(null, 'linkedin', D(-1), '09:00', 'Caso de éxito: catálogo Hotel Mirador', 'publicado');
+  pub(null, 'instagram', D(3), '18:00', 'Proceso: del boceto al logotipo', 'borrador');
+  pub(null, 'newsletter', D(10), '08:00', '3 errores al encargar una web', 'idea');
+  pub(null, 'blog', D(14), '08:00', 'Cómo preparar un buen briefing', 'idea');
+  const mesPasado = sumarDias(`${hoy.slice(0, 7)}-01`, -1).slice(0, 7);
+  for (const [d, t, ch] of [
+    [3, 'Consejos para una sonrisa sana en otoño', 'instagram'],
+    [8, 'Conoce nuestra nueva sala de espera', 'instagram'],
+    [12, 'Mitos sobre el blanqueamiento', 'facebook'],
+    [17, 'Reel: así es una limpieza dental', 'instagram'],
+    [22, 'Caso real: ortodoncia invisible en 9 meses', 'instagram'],
+    [27, 'Horario especial de Todos los Santos', 'facebook'],
+  ] as const)
+    pub('co5', ch, `${mesPasado}-${String(d).padStart(2, '0')}`, '13:00', t, 'publicado');
+
+  // Accesos de clientes (en la demo, contraseñas de ejemplo guardadas en el navegador).
+  const acceso = (id: string, companyId: string, service: string, url: string, username: string, password: string): Acceso => ({
+    id, companyId, service, url, username, password, hasPassword: true, createdAt: creado(-60),
+  });
+  const accesses: Acceso[] = [
+    acceso('k1', 'co1', 'WordPress (administración)', 'estudioalba.es/wp-admin', 'nebula_admin', 'demo-Alba-2026'),
+    acceso('k2', 'co1', 'Panel del hosting', 'raiolanetworks.es', 'estudioalba', 'demo-hosting-77'),
+    acceso('k3', 'co5', 'Instagram @clinicasanz', 'instagram.com', 'clinicasanz', 'demo-Sanz!ig'),
+    acceso('k4', 'co5', 'Meta Business Suite', 'business.facebook.com', 'teresa@ejemplo.es', 'Acceso por invitación'),
+    acceso('k5', 'co2', 'Mailchimp (newsletter interna)', 'mailchimp.com', 'comunicacion@ruizasociados.es', 'demo-mc-2026'),
+  ];
+
   return {
     companies, contacts, deals, projects, deliverables, tasks, events, notes, activities, files,
-    retainers, renewals, invoices, payments, expenses, notificationReads: [],
+    retainers, renewals, invoices, payments, expenses, timeEntries, posts, accesses, notificationReads: [],
   };
 }

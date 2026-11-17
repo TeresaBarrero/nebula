@@ -1,7 +1,7 @@
 import type { Disciplina } from '@/lib/catalogos/disciplinas';
 import type { FormaJuridica, ModoIrpf } from '@/lib/reglas/irpf';
 import type { EfectoBorrado } from '@/lib/reglas/vinculos';
-import type { Colecciones, Factura, FilaDe, Id, NombreColeccion } from './entidades';
+import type { Colecciones, Cronometro, Factura, FilaDe, Id, NombreColeccion } from './entidades';
 
 export type Tema = 'system' | 'light' | 'dark';
 
@@ -15,6 +15,8 @@ export type Perfil = {
   email: string;
   phone: string;
   prefs: Preferencias;
+  /** Cronómetro en marcha (o null). */
+  activeTimer: Cronometro | null;
 };
 
 /** Datos del negocio (tabla `workspace_settings`, SPEC §4.1). */
@@ -90,6 +92,8 @@ export interface Almacen {
    * o numera un presupuesto. Devuelve el documento como queda.
    */
   emitir(id: Id): Promise<Factura>;
+  /** Descifra y devuelve la contraseña de un acceso. */
+  verClave(id: Id): Promise<string>;
 
   /** Guarda el archivo y devuelve dónde quedó (storagePath). */
   subirArchivo(id: Id, archivo: File): Promise<string>;

@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/tipos-bd';
 import { esDisciplina } from '@/lib/catalogos/disciplinas';
 import { limpiarDatosAsistente } from './asistente';
-import { NOMBRES_COLECCION, coleccionesVacias, type Factura, type Proyecto } from './entidades';
+import { NOMBRES_COLECCION, coleccionesVacias, type Acceso, type Cronometro, type Factura, type Proyecto } from './entidades';
 import { TABLA, aFila, deFila } from './mapeo';
 import {
   AJUSTES_POR_DEFECTO,
@@ -34,8 +34,15 @@ function prefsDesde(j: unknown): Preferencias {
   return { ...PREFS_POR_DEFECTO, theme, compact: o.compact === true };
 }
 
+function cronometroDesde(j: unknown): Cronometro | null {
+  const o = (j && typeof j === 'object' ? j : null) as Record<string, unknown> | null;
+  if (!o || typeof o.start !== 'string') return null;
+  const t = (k: string) => (typeof o[k] === 'string' && o[k] ? String(o[k]) : null);
+  return { start: o.start, projectId: t('projectId'), retainerId: t('retainerId'), taskId: t('taskId'), note: typeof o.note === 'string' ? o.note : '' };
+}
+
 export function perfilDesdeFila(f: FilaPerfil): Perfil {
-  return { fullName: f.full_name, name: f.name, role: f.role, email: f.email, phone: f.phone, prefs: prefsDesde(f.prefs) };
+  return { fullName: f.full_name, name: f.name, role: f.role, email: f.email, phone: f.phone, prefs: prefsDesde(f.prefs), activeTimer: cronometroDesde(f.active_timer) };
 }
 
 export function ajustesDesdeFila(f: FilaAjustes): Ajustes {
@@ -131,6 +138,7 @@ export function crearAlmacenNube(sb: SupabaseClient<Database>): Almacen {
       if (c.role !== undefined) fila.role = c.role;
       if (c.phone !== undefined) fila.phone = c.phone;
       if (c.prefs !== undefined) fila.prefs = c.prefs;
+      if (c.activeTimer !== undefined) fila.active_timer = c.activeTimer;
       const { error } = await sb.from('profiles').update(fila).eq('id', usuarioId);
       if (error) throw error;
     },
@@ -142,9 +150,11 @@ export function crearAlmacenNube(sb: SupabaseClient<Database>): Almacen {
     async cargarColecciones() {
       const c = coleccionesVacias();
       const pedir = async (tabla: string) => {
-        const { data, error } = await db.from(tabla).select('*');
+        // De los accesos se piden todas las columnas menos la contraseña cifrada (no se puede leer).
+        const columnas: string = tabla === 'accesses' ? 'id,workspace_id,company_id,service,url,username,has_password,created_at' : '*';
+        const { data, error } = await db.from(tabla).select(columnas);
         if (error) throw error;
-        return (data ?? []) as Record<string, unknown>[];
+        return (data ?? []) as unknown as Record<string, unknown>[];
       };
       const [equipo, leidos, ...tablas] = await Promise.all([
         pedir('project_collaborators'),
@@ -162,6 +172,7 @@ export function crearAlmacenNube(sb: SupabaseClient<Database>): Almacen {
       return c;
     },
     async crear(col, fila) {
+      if (col === 'accesses') return guardarAcceso(fila as Acceso);
       const { error } = await db.from(TABLA[col]).insert({ ...aFila(fila as Record<string, unknown>), workspace_id: espacioId });
       if (error) throw error;
       if (col === 'projects') await ponerEquipo(fila.id, (fila as Proyecto).collaborators);
@@ -173,6 +184,7 @@ export function crearAlmacenNube(sb: SupabaseClient<Database>): Almacen {
       if (col === 'projects') for (const f of filas) await ponerEquipo(f.id, (f as Proyecto).collaborators);
     },
     async actualizar(col, id, cambios) {
+      if (col === 'accesses') return guardarAcceso({ ...(cambios as Acceso), id });
       const fila = aFila(cambios as Record<string, unknown>);
       if (Object.keys(fila).length) {
         const { error } = await db.from(TABLA[col]).update(fila).eq('id', id);
@@ -188,6 +200,11 @@ export function crearAlmacenNube(sb: SupabaseClient<Database>): Almacen {
     async restaurar(ef) {
       for (const { col, fila } of ef.borradas) await this.crear(col, fila as never);
       for (const d of ef.desvinculadas.filter((x) => !x.fija)) await this.actualizar(d.col, d.id, { [d.campo]: d.antes } as never);
+    },
+    async verClave(id) {
+      const { data, error } = await db.rpc('ver_clave_acceso', { p_id: id });
+      if (error) throw new Error(error.message);
+      return String(data ?? '');
     },
     async emitir(id) {
       // La numeración la hace la base de datos (emitir_documento): atómica y sin huecos.
@@ -218,6 +235,15 @@ export function crearAlmacenNube(sb: SupabaseClient<Database>): Almacen {
       if (ruta) await sb.storage.from(BUCKET).remove([ruta]);
     },
   };
+
+  /** Crea o cambia un acceso: la contraseña la cifra la base de datos (guardar_acceso). */
+  async function guardarAcceso(a: Acceso) {
+    const { error } = await db.rpc('guardar_acceso', {
+      p_id: a.id, p_workspace: espacioId, p_company: a.companyId, p_service: a.service, p_url: a.url, p_username: a.username,
+      p_password: a.password === undefined ? null : a.password,
+    });
+    if (error) throw new Error(error.message);
+  }
 
   /** Sustituye el equipo (colaboradores) de un proyecto. */
   async function ponerEquipo(proyecto: string, ids: string[]) {

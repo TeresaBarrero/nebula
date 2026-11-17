@@ -1,6 +1,7 @@
 import { CUADRANTES, ESTADOS_ENTREGABLE, FASES_OPORTUNIDAD, FASES_PROYECTO, colorAvatar, type Pastel } from '@/lib/catalogos/crm';
 import { DISCIPLINAS } from '@/lib/catalogos/disciplinas';
 import { ESTADOS_FACTURA, TIPOS_RENOVACION } from '@/lib/catalogos/dinero';
+import { CANALES } from '@/lib/catalogos/trabajo';
 import { eur } from './dinero';
 import { estadoDe, totales } from './facturas';
 import type { NombreIcono } from '@/lib/catalogos/iconos';
@@ -16,7 +17,7 @@ export type Grupo = { titulo: string; items: Resultado[] };
 
 /**
  * Buscador ⌘K (SPEC §6.19): contactos, empresas, proyectos, oportunidades, tareas, entregables, facturas,
- * igualas, renovaciones, gastos, documentos y notas. Contenidos, contratos y portales se añaden con sus fases.
+ * igualas, renovaciones, gastos, contenidos, documentos y notas. Contratos y portales se añaden en la Fase 4.
  */
 export function buscar(c: Colecciones, texto: string, hoy: Fecha): Grupo[] {
   const q = normalizar(texto.trim());
@@ -62,6 +63,13 @@ export function buscar(c: Colecciones, texto: string, hoy: Fecha): Grupo[] {
         .filter((v) => m(v.name))
         .slice(0, 5)
         .map((v) => ({ clave: 'v' + v.id, label: v.name, icono: 'layers', cls: ESTADOS_ENTREGABLE[v.status].cls, pista: proyecto(v.projectId)?.name ?? '', destino: { ruta: `/proyectos?p=${v.projectId}` } })),
+    },
+    {
+      titulo: 'Contenidos',
+      items: c.posts
+        .filter((x) => m(x.title, x.copy))
+        .slice(0, 5)
+        .map((x) => ({ clave: 'po' + x.id, label: x.title, icono: 'megaphone', cls: CANALES[x.channel].cls, pista: `${CANALES[x.channel].label} · ${relativa(x.date, hoy)}`, destino: { formulario: 'post', id: x.id } })),
     },
     {
       titulo: 'Facturas',

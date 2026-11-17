@@ -3,12 +3,33 @@ import { aplicarBorrado, cambiarFila, deshacerBorrado, efectoDeBorrar, ponerFila
 import { AJUSTES_POR_DEFECTO, type Ajustes, type Almacen, type Cargado, type DatosAsistente, type Perfil } from './tipos';
 import { limpiarDatosAsistente } from './asistente';
 import { cambioPermitido, cambiosAlEmitir, esEmitida, problemaParaEmitir } from '@/lib/reglas/facturas';
-import { coleccionesVacias, type Colecciones, type Factura } from './entidades';
+import { coleccionesVacias, type Acceso, type Colecciones, type Factura } from './entidades';
+
+/** En la demo la contraseña se guarda en el navegador (son datos de ejemplo). undefined = la que había. */
+function conClave(a: Acceso, antes: Acceso | undefined): Acceso {
+  const password = a.password === undefined ? (antes?.password ?? '') : a.password;
+  return { ...a, password, hasPassword: password !== '' };
+}
 import { semillaDemo } from './semilla';
 
 /** Dónde guarda la demo sus datos en el navegador. Si cambia la forma de los datos, se sube `v`. */
 export const CLAVE_DEMO = 'nebula-demo';
-const VERSION = 3;
+const VERSION = 4;
+
+/** Datos de ejemplo de la Fase 3 que se añaden a una demo ya empezada (sin enlaces rotos ni pisar lo que se cambió). */
+function trabajoDeEjemplo(semilla: Colecciones, previas: Colecciones): Colecciones {
+  const hay = (lista: { id: string }[], id: string | null) => Boolean(id && lista.some((x) => x.id === id));
+  const de = <T extends { id: string }>(lista: T[], id: string) => lista.find((x) => x.id === id);
+  return {
+    ...previas,
+    companies: previas.companies.map((e) => (e.brand ? e : { ...e, brand: de(semilla.companies, e.id)?.brand })),
+    projects: previas.projects.map((p) => ({ ...p, brief: p.brief ?? de(semilla.projects, p.id)?.brief, portfolio: p.portfolio ?? de(semilla.projects, p.id)?.portfolio })),
+    deliverables: previas.deliverables.map((v) => (v.versions ? v : { ...v, versions: de(semilla.deliverables, v.id)?.versions ?? [], feedback: de(semilla.deliverables, v.id)?.feedback ?? [] })),
+    timeEntries: semilla.timeEntries.filter((t) => (!t.projectId || hay(previas.projects, t.projectId)) && (!t.retainerId || hay(previas.retainers, t.retainerId))),
+    posts: semilla.posts.filter((x) => !x.companyId || hay(previas.companies, x.companyId)),
+    accesses: semilla.accesses.filter((a) => hay(previas.companies, a.companyId)),
+  };
+}
 
 /** Datos de dinero de ejemplo, sin enlaces a cosas que ya se borraron en la demo. */
 function dineroDeEjemplo(semilla: Colecciones, previas: Partial<Colecciones>): Pick<Colecciones, 'retainers' | 'renewals' | 'invoices' | 'payments' | 'expenses'> {
@@ -44,6 +65,7 @@ const perfilEjemplo = (): Perfil => ({
   email: 'teresa@ejemplo.es',
   phone: '600 123 456',
   prefs: { theme: 'system', compact: false },
+  activeTimer: null,
 });
 
 const ajustesEjemplo = (): Ajustes => ({
@@ -72,12 +94,15 @@ export function leerDemo(store: Guardado, dia: string = hoy()): EstadoDemo {
       if (s && s.perfil && s.ajustes) {
         // Versión 1 (Fase 0): conserva perfil y asistente y añade los datos de ejemplo.
         // Versión 2 (Fase 1): conserva lo hecho en la demo y añade los datos de dinero de ejemplo.
-        const colecciones =
-          s.v === VERSION && s.colecciones
-            ? { ...coleccionesVacias(), ...s.colecciones }
-            : s.v === 2 && s.colecciones
-              ? { ...coleccionesVacias(), ...s.colecciones, ...dineroDeEjemplo(semillaDemo(dia), s.colecciones) }
-              : semillaDemo(dia);
+        // Versión 3 (Fase 2): conserva lo hecho y añade horas, contenidos, accesos, briefings y marcas de ejemplo.
+        const semilla = () => semillaDemo(dia);
+        let colecciones: Colecciones;
+        if (s.v === VERSION && s.colecciones) colecciones = { ...coleccionesVacias(), ...s.colecciones };
+        else if ((s.v === 2 || s.v === 3) && s.colecciones) {
+          const base = { ...coleccionesVacias(), ...s.colecciones };
+          const conDinero = s.v === 2 ? { ...base, ...dineroDeEjemplo(semilla(), s.colecciones) } : base;
+          colecciones = trabajoDeEjemplo(semilla(), conDinero);
+        } else colecciones = semilla();
         return {
           v: VERSION,
           perfil: { ...perfilEjemplo(), ...s.perfil },
@@ -152,7 +177,7 @@ export function crearAlmacenDemo(store: Guardado, archivos?: Archivos): Almacen 
       return leerDemo(store).colecciones;
     },
     async crear(col, fila) {
-      cambiar((c) => ponerFila(c, col, fila));
+      cambiar((c) => ponerFila(c, col, col === 'accesses' ? (conClave(fila as unknown as Acceso, undefined) as never) : fila));
     },
     async crearVarios(col, filas) {
       cambiar((c) => filas.reduce((x, f) => ponerFila(x, col, f), c));
@@ -162,6 +187,11 @@ export function crearAlmacenDemo(store: Guardado, archivos?: Archivos): Almacen 
       const c = leerDemo(store).colecciones;
       const f = col === 'invoices' ? c.invoices.find((x) => x.id === id) : undefined;
       if (f && !cambioPermitido(f, cambios as Partial<Factura>)) throw new Error('Una factura emitida no se puede modificar');
+      if (col === 'accesses') {
+        const antes = c.accesses.find((a) => a.id === id);
+        const nuevo = conClave({ ...(antes as Acceso), ...(cambios as Partial<Acceso>) }, antes);
+        return cambiar((x) => cambiarFila(x, 'accesses', id, nuevo));
+      }
       cambiar((x) => cambiarFila(x, col, id, cambios));
     },
     async borrar(col, id) {
@@ -169,6 +199,9 @@ export function crearAlmacenDemo(store: Guardado, archivos?: Archivos): Almacen 
       const ef = efectoDeBorrar(c, col, id);
       if (ef.borradas.some((b) => b.col === 'invoices' && esEmitida(b.fila as unknown as Factura))) throw new Error('Una factura emitida no se puede borrar');
       cambiar((x) => aplicarBorrado(x, ef));
+    },
+    async verClave(id) {
+      return leerDemo(store).colecciones.accesses.find((a) => a.id === id)?.password ?? '';
     },
     async emitir(id) {
       const s = leerDemo(store);
