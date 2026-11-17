@@ -23,6 +23,12 @@ export function FilaReunion({ e }: { e: Reunion }) {
         <button type="button" className="task-t" style={{ fontWeight: 600 }} onClick={() => abrir('event', { id: e.id })}>
           {e.title}
         </button>
+        {e.source === 'google' && (
+          <span className="pill sage" style={{ margin: '2px 0' }}>
+            <Icono n="calendar" />
+            De Google Calendar
+          </span>
+        )}
         {e.source === 'reserva' && (
           <span className="pill lilac" style={{ margin: '2px 0' }}>
             <Icono n="link" />

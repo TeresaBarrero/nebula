@@ -282,14 +282,14 @@ isOneToOne: false
                   ]
                 },"events": {
                   Row: {
-                    "contact_id": string | null,"created_at": string,"date": string,"id": string,"project_id": string | null,"source": string | null,"time": string,"title": string,"updated_at": string,"workspace_id": string
+                    "contact_id": string | null,"created_at": string,"date": string,"google_event_id": string | null,"id": string,"project_id": string | null,"source": string | null,"time": string,"title": string,"updated_at": string,"workspace_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "contact_id"?: string | null,"created_at"?: string,"date": string,"id"?: string,"project_id"?: string | null,"source"?: string | null,"time"?: string,"title": string,"updated_at"?: string,"workspace_id": string
+                    "contact_id"?: string | null,"created_at"?: string,"date": string,"google_event_id"?: string | null,"id"?: string,"project_id"?: string | null,"source"?: string | null,"time"?: string,"title": string,"updated_at"?: string,"workspace_id": string
                   }
                   Update: {
-                    "contact_id"?: string | null,"created_at"?: string,"date"?: string,"id"?: string,"project_id"?: string | null,"source"?: string | null,"time"?: string,"title"?: string,"updated_at"?: string,"workspace_id"?: string
+                    "contact_id"?: string | null,"created_at"?: string,"date"?: string,"google_event_id"?: string | null,"id"?: string,"project_id"?: string | null,"source"?: string | null,"time"?: string,"title"?: string,"updated_at"?: string,"workspace_id"?: string
                   }
                   Relationships: [
                     {
@@ -380,6 +380,26 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "projects"
       referencedColumns: ["workspace_id","id"]
+    }
+                  ]
+                },"integrations": {
+                  Row: {
+                    "account_email": string,"created_at": string,"id": string,"last_error": string,"last_sync_at": string | null,"on_": boolean,"provider": string,"token_enc": string | null,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_email"?: string,"created_at"?: string,"id"?: string,"last_error"?: string,"last_sync_at"?: string | null,"on_"?: boolean,"provider": string,"token_enc"?: string | null,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "account_email"?: string,"created_at"?: string,"id"?: string,"last_error"?: string,"last_sync_at"?: string | null,"on_"?: boolean,"provider"?: string,"token_enc"?: string | null,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "integrations_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
     }
                   ]
                 },"invoice_counters": {
@@ -808,6 +828,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"rgpd_log": {
+                  Row: {
+                    "action": string,"created_at": string,"date": string,"detail": string,"id": string,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"created_at"?: string,"date"?: string,"detail"?: string,"id"?: string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "action"?: string,"created_at"?: string,"date"?: string,"detail"?: string,"id"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "rgpd_log_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"tasks": {
                   Row: {
                     "assignee_id": string | null,"blocked_by": string | null,"contact_id": string | null,"created_at": string,"done": boolean,"due": string | null,"estimate": number,"id": string,"important": boolean,"next_created": boolean,"phase": string | null,"project_id": string | null,"repeat": string,"title": string,"updated_at": string,"urgent": boolean,"workspace_id": string
@@ -961,6 +1001,9 @@ isOneToOne: true
 "admin_set_status":
 { Args: { "new_status": string,"target": string }; Returns: undefined
                            },
+"borrar_datos_contacto":
+{ Args: { "p_id": string }; Returns: (string)[]
+                           },
 "clave_accesos":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
@@ -1003,11 +1046,17 @@ isOneToOne: true
 "guardar_acceso":
 { Args: { "p_company": string,"p_id": string,"p_password": string,"p_service": string,"p_url": string,"p_username": string,"p_workspace": string }; Returns: undefined
                            },
+"guardar_integracion":
+{ Args: { "p_email": string,"p_provider": string,"p_token": string,"p_ws": string }; Returns: undefined
+                           },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "is_member":
 { Args: { "ws": string }; Returns: boolean
+                           },
+"leer_integracion":
+{ Args: { "p_provider": string,"p_ws": string }; Returns: string
                            },
 "ver_clave_acceso":
 { Args: { "p_id": string }; Returns: string

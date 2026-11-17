@@ -56,7 +56,13 @@ function Calendario() {
           </button>
         }
       >
-        Reuniones, fechas límite de tareas, vencimientos de facturas y renovaciones.
+        Reuniones, fechas límite de tareas, vencimientos de facturas y renovaciones.{' '}
+        {c.integrations.some((i) => i.provider === 'gcal') && (
+          <span className="pill sage">
+            <Icono n="tick" />
+            Sincronizado con Google Calendar
+          </span>
+        )}
       </Cabecera>
       <div className="cal-wrap">
         <section className="card cal">

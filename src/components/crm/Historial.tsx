@@ -90,7 +90,7 @@ export function SeccionHistorial({ filtro, titulo = 'Historial', limite = 14, re
 }
 
 /**
- * Escribir un correo con plantilla (SPEC §6.4). Hasta conectar Gmail/Outlook (Fase 5) se abre en tu programa de correo
+ * Escribir un correo con plantilla (SPEC §6.4). Hasta conectar Gmail/Outlook (más adelante) se abre en tu programa de correo
  * y queda apuntado en el historial.
  */
 export function EscribirCorreo({ contacto, alCerrar }: { contacto: Contacto; alCerrar: () => void }) {
@@ -159,7 +159,7 @@ export function EscribirCorreo({ contacto, alCerrar }: { contacto: Contacto; alC
         </label>
         <p className="muted full" style={{ margin: 0, fontSize: 12.5 }}>
           {contacto.email
-            ? 'Se abrirá tu programa de correo con el mensaje listo. Conectar Gmail u Outlook para enviarlo desde aquí llega en la Fase 5.'
+            ? 'Se abrirá tu programa de correo con el mensaje listo. Enviarlo directamente desde Gmail u Outlook llegará más adelante.'
             : 'Este contacto no tiene email. Añádelo desde «Editar».'}
         </p>
       </div>

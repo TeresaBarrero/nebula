@@ -3,6 +3,7 @@ import { aplicarBorrado, cambiarFila, deshacerBorrado, efectoDeBorrar, ponerFila
 import { AJUSTES_POR_DEFECTO, type Ajustes, type Almacen, type Cargado, type DatosAsistente, type Perfil } from './tipos';
 import { limpiarDatosAsistente } from './asistente';
 import { cambioPermitido, cambiosAlEmitir, esEmitida, problemaParaEmitir } from '@/lib/reglas/facturas';
+import { borrarDatosContacto as borrarDatosDe } from '@/lib/reglas/rgpd';
 import { coleccionesVacias, type Acceso, type Colecciones, type Factura } from './entidades';
 
 /** En la demo la contraseña se guarda en el navegador (son datos de ejemplo). undefined = la que había. */
@@ -217,6 +218,13 @@ export function crearAlmacenDemo(store: Guardado, archivos?: Archivos): Almacen 
       const ef = efectoDeBorrar(c, col, id);
       if (ef.borradas.some((b) => b.col === 'invoices' && esEmitida(b.fila as unknown as Factura))) throw new Error('Una factura emitida no se puede borrar');
       cambiar((x) => aplicarBorrado(x, ef));
+    },
+    async borrarDatosContacto(id) {
+      const s = leerDemo(store);
+      const r = borrarDatosDe(s.colecciones, id, hoy(), { id: crypto.randomUUID(), ahora: new Date().toISOString() });
+      s.colecciones = r.c;
+      escribirDemo(store, s);
+      return r.rutas;
     },
     async verClave(id) {
       return leerDemo(store).colecciones.accesses.find((a) => a.id === id)?.password ?? '';

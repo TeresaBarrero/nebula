@@ -166,7 +166,12 @@ export function crearAlmacenNube(sb: SupabaseClient<Database>): Almacen {
       const c = coleccionesVacias();
       const pedir = async (tabla: string) => {
         // De los accesos se piden todas las columnas menos la contraseña cifrada (no se puede leer).
-        const columnas: string = tabla === 'accesses' ? 'id,workspace_id,company_id,service,url,username,has_password,created_at' : '*';
+        const columnas: string =
+          tabla === 'accesses'
+            ? 'id,workspace_id,company_id,service,url,username,has_password,created_at'
+            : tabla === 'integrations'
+              ? 'id,workspace_id,provider,account_email,on_,last_sync_at,last_error,created_at'
+              : '*';
         const { data, error } = await db.from(tabla).select(columnas);
         if (error) throw error;
         return (data ?? []) as unknown as Record<string, unknown>[];
@@ -215,6 +220,12 @@ export function crearAlmacenNube(sb: SupabaseClient<Database>): Almacen {
     async restaurar(ef) {
       for (const { col, fila } of ef.borradas) await this.crear(col, fila as never);
       for (const d of ef.desvinculadas.filter((x) => !x.fija)) await this.actualizar(d.col, d.id, { [d.campo]: d.antes } as never);
+    },
+    async borrarDatosContacto(id) {
+      // Todo o nada, dentro de la base de datos (borrar_datos_contacto).
+      const { data, error } = await db.rpc('borrar_datos_contacto', { p_id: id });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as string[];
     },
     async verClave(id) {
       const { data, error } = await db.rpc('ver_clave_acceso', { p_id: id });

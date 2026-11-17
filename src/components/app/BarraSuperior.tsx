@@ -17,6 +17,14 @@ const suscribirTemaSistema = (avisar: () => void) => {
   return () => m.removeEventListener('change', avisar);
 };
 const sinCambios = () => () => {};
+const suscribirRed = (avisar: () => void) => {
+  addEventListener('online', avisar);
+  addEventListener('offline', avisar);
+  return () => {
+    removeEventListener('online', avisar);
+    removeEventListener('offline', avisar);
+  };
+};
 
 /** Barra superior: ☰ (móvil), buscador ⌘K, aviso de demo, cronómetro, tema y avisos (SPEC §3). */
 export function BarraSuperior({
@@ -28,7 +36,8 @@ export function BarraSuperior({
   abrirPaleta: () => void;
   alternarAvisos: () => void;
 }) {
-  const { modo, perfil, cambiarTema } = useNebula();
+  const { modo, perfil, cambiarTema, almacen } = useNebula();
+  const sinRed = useSyncExternalStore(suscribirRed, () => !navigator.onLine, () => false);
   const { pendientes } = useAvisos();
   const sistemaOscuro = useSyncExternalStore(suscribirTemaSistema, () => matchMedia(OSCURO).matches, () => false);
   const oscuro = perfil.prefs.theme === 'dark' || (perfil.prefs.theme === 'system' && sistemaOscuro);
@@ -45,6 +54,11 @@ export function BarraSuperior({
         <kbd>{mac ? '⌘K' : 'Ctrl K'}</kbd>
       </button>
       <div className="spacer" />
+      {(sinRed || (almacen as { desconectado?: boolean }).desconectado) && (
+        <span className="pill rose" role="status" title="Estás viendo tus datos de la última vez que hubo conexión. Para guardar cambios hace falta internet.">
+          Sin conexión · solo consulta
+        </span>
+      )}
       {modo === 'demo' && (
         <div className="demo-bar">
           <span className="pill butter demo-pill">

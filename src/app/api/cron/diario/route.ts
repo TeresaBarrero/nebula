@@ -1,9 +1,10 @@
 import { tareasDiarias } from '@/lib/automatizaciones';
+import { sincronizar } from '@/lib/servidor/google';
 import { cargarEspacio, contextoServidor, ejecutorServidor, json, servicio } from '@/lib/servidor/espacio';
 
 /**
  * Tarea de cada mañana (Vercel Cron, ver vercel.json): recordatorios de pago, toques por entregables
- * y facturas de igualas en todos los espacios. Protegida con CRON_SECRET.
+ * facturas de igualas y sincronización con Google Calendar en todos los espacios. Protegida con CRON_SECRET.
  */
 export async function GET(req: Request) {
   const secreto = process.env.CRON_SECRET;
@@ -18,6 +19,8 @@ export async function GET(req: Request) {
       const { c, ajustes } = await cargarEspacio(sb, id);
       if (!ajustes.onboarded) continue;
       resumen[id] = await tareasDiarias(contextoServidor(sb, id, c, ajustes, origen), ejecutorServidor(sb, id, c));
+      // Google Calendar, si está conectado.
+      if (c.integrations.some((i) => i.provider === 'gcal')) await sincronizar(sb, id);
     } catch (e) {
       resumen[id] = { error: String(e).slice(0, 200) };
     }

@@ -494,11 +494,16 @@ export function semillaDemo(hoy: string): Colecciones {
     { id: 'm1', contactId: 'c8', companyId: 'co7', to: 'andres@pulsogym.es', subject: 'Contrato para firmar: Contrato · Lanzamiento app Pulso', body: 'Hola Andrés:\n\nTe envío el contrato…', kind: 'contrato', status: 'simulado', error: '', createdAt: `${D(-4)}T10:00:00.000Z` },
     { id: 'm2', contactId: 'c11', companyId: 'co2', to: 'isoler@ruizasociados.es', subject: 'Recordatorio: factura pendiente', body: 'Hola Irene:\n\nLa factura venció…', kind: 'recordatorio', status: 'simulado', error: '', createdAt: `${D(-3)}T08:00:00.000Z` },
   ];
+  for (const e of events) if (!e.source && e.date >= D(-7)) e.source = 'google';
   events.push({ id: 'e10', title: 'Llamada de descubrimiento · Clínica Veterinaria Huellas', date: D(3), time: '12:00', contactId: null, projectId: null, source: 'reserva', createdAt: creado(-1) });
 
   return {
     companies, contacts, deals, projects, deliverables, tasks, events, notes, activities, files,
     retainers, renewals, invoices, payments, expenses, timeEntries, posts, accesses,
-    contracts, reports, automations, automationRuns, outgoingEmails, notificationReads: [],
+    contracts, reports, automations, automationRuns, outgoingEmails,
+    // Fase 5: registro de protección de datos y Google Calendar conectado (simulado en la demo).
+    rgpdLog: [{ id: 'rg1', date: D(-40), action: 'Exportación de datos', detail: 'Se entregaron sus datos a una persona que lo pidió.', createdAt: creado(-40) }],
+    integrations: [{ id: 'gcal', provider: 'gcal', accountEmail: 'teresa@ejemplo.es', on_: true, lastSyncAt: `${D(0)}T07:00:00.000Z`, lastError: '', createdAt: creado(-90) }],
+    notificationReads: [],
   };
 }

@@ -14,10 +14,10 @@ import { useDatos } from '@/components/app/Datos';
 import { useFormularios } from '@/components/app/formularios/Formulario';
 import { Avatar, BarraFases, CajaDocumentos, FilaTarea, Pill, PillDisciplina, PillEstadoContacto, useCopiar } from '@/components/crm/comunes';
 import { EscribirCorreo, SeccionHistorial } from '@/components/crm/Historial';
+import { BotonesRgpd } from '@/components/crm/ProteccionDatos';
 import { Ayuda } from '@/components/ui/Ayuda';
 import { Cabecera } from '@/components/ui/Cabecera';
 import { Icono } from '@/components/ui/Icono';
-import { useToast } from '@/components/ui/Toasts';
 
 type FiltroLista = 'all' | 'activo' | 'potencial' | 'colab' | 'inactivo';
 const FILTROS: [FiltroLista, string][] = [
@@ -121,7 +121,6 @@ function FichaContacto({ x }: { x: Contacto }) {
   const { c, hoy } = useDatos();
   const abrir = useFormularios();
   const copiar = useCopiar();
-  const toast = useToast();
   const [correo, setCorreo] = useState(false);
   const empresa = c.companies.find((e) => e.id === x.companyId);
   const colab = x.type === 'Colaborador';
@@ -331,14 +330,7 @@ function FichaContacto({ x }: { x: Contacto }) {
                 Apuntar permiso
               </button>
             )}
-            <button type="button" className="btn sm" onClick={() => toast('«Darle sus datos» llega en la Fase 5')}>
-              <Icono n="download" />
-              Darle sus datos
-            </button>
-            <button type="button" className="btn sm danger" onClick={() => toast('«Borrar sus datos» llega en la Fase 5')}>
-              <Icono n="trash" />
-              Borrar sus datos
-            </button>
+            <BotonesRgpd x={x} />
           </div>
         </div>
       </section>

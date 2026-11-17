@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { type ClaveAutomatizacion, type Colecciones, type Documento, type Factura, type FilaDe, type Id, type NombreColeccion } from '@/lib/datos/entidades';
 import { hoy } from '@/lib/reglas/fechas';
+import { borrarDatosContacto as borrarDatosDe } from '@/lib/reglas/rgpd';
 import { aplicarBorrado, cambiarFila, deshacerBorrado, efectoDeBorrar, ponerFila } from '@/lib/reglas/vinculos';
 import { useToast } from '@/components/ui/Toasts';
 import { useNebula } from './Nebula';
@@ -29,6 +30,8 @@ type ApiDatos = {
   emitir: (id: Id) => Promise<Factura | null>;
   /** Guarda un archivo suelto (p. ej. el ticket de un gasto) y devuelve dónde quedó. */
   subirArchivo: (id: Id, archivo: File) => Promise<string | null>;
+  /** «Borrar sus datos» (RGPD): todo o nada. Devuelve true si se hizo. */
+  borrarDatosContacto: (id: Id) => Promise<boolean>;
   /** Descifra la contraseña de un acceso (o null si no se pudo). */
   verClave: (id: Id) => Promise<string | null>;
   /** Abre un archivo guardado. */
@@ -74,11 +77,11 @@ export function ProveedorDatos({ children, cargando }: { children: ReactNode; ca
         return true;
       } catch {
         deshacer();
-        toast('No se ha podido guardar. Revisa tu conexión e inténtalo de nuevo.');
+        toast(navigator.onLine === false || (almacen as { desconectado?: boolean }).desconectado ? 'Sin conexión: puedes consultar tus datos, pero para guardar cambios hace falta internet.' : 'No se ha podido guardar. Revisa tu conexión e inténtalo de nuevo.');
         return false;
       }
     },
-    [toast],
+    [toast, almacen],
   );
 
   const api = useMemo<ApiDatos | null>(() => {
@@ -196,6 +199,17 @@ export function ProveedorDatos({ children, cargando }: { children: ReactNode; ca
         }
       },
       abrirArchivo: async (ruta) => abrir(ruta),
+      borrarDatosContacto: async (id) => {
+        try {
+          const rutas = await almacen.borrarDatosContacto(id);
+          poner((x) => borrarDatosDe(x, id, hoy(), { id: nuevoId(), ahora: ahoraISO() }).c);
+          for (const r of rutas) await almacen.borrarArchivo(r).catch(() => {});
+          return true;
+        } catch {
+          toast('No se han podido borrar sus datos. Inténtalo de nuevo.');
+          return false;
+        }
+      },
       verClave: async (id) => {
         try {
           return await almacen.verClave(id);

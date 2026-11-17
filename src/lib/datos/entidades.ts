@@ -150,6 +150,8 @@ export type Reunion = {
   contactId: Id | null;
   projectId: Id | null;
   source: 'google' | 'reserva' | null;
+  /** Id del evento en Google Calendar, si está sincronizado. */
+  googleEventId?: string | null;
   createdAt: string;
 };
 
@@ -391,6 +393,14 @@ export type CorreoEnviado = {
   createdAt: string;
 };
 
+// ───────── Fase 5 · Cierre ─────────
+
+/** Registro de protección de datos (sin datos personales tras un borrado). */
+export type RegistroRgpd = { id: Id; date: Fecha; action: string; detail: string; createdAt: string };
+
+/** Conexión con un servicio externo (de momento, Google Calendar). El permiso no viaja nunca a la app. */
+export type Integracion = { id: Id; provider: 'gcal'; accountEmail: string; on_: boolean; lastSyncAt: string | null; lastError: string; createdAt: string };
+
 /** Cronómetro en marcha de la persona. */
 export type Cronometro = { start: string; projectId: Id | null; retainerId: Id | null; taskId: Id | null; note: string };
 
@@ -418,6 +428,8 @@ export type Colecciones = {
   automations: Automatizacion[];
   automationRuns: EjecucionAutomatizacion[];
   outgoingEmails: CorreoEnviado[];
+  rgpdLog: RegistroRgpd[];
+  integrations: Integracion[];
   /** Claves de avisos ya leídos (SPEC §7.9). */
   notificationReads: string[];
 };
@@ -449,6 +461,8 @@ export const NOMBRES_COLECCION: NombreColeccion[] = [
   'automations',
   'automationRuns',
   'outgoingEmails',
+  'rgpdLog',
+  'integrations',
 ];
 
 export function coleccionesVacias(): Colecciones {
@@ -476,6 +490,8 @@ export function coleccionesVacias(): Colecciones {
     automations: [],
     automationRuns: [],
     outgoingEmails: [],
+    rgpdLog: [],
+    integrations: [],
     notificationReads: [],
   };
 }

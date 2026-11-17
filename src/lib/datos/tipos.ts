@@ -100,6 +100,8 @@ export interface Almacen {
    * o numera un presupuesto. Devuelve el documento como queda.
    */
   emitir(id: Id): Promise<Factura>;
+  /** «Borrar sus datos» de un contacto (RGPD). Devuelve las rutas de sus archivos para borrarlos. */
+  borrarDatosContacto(id: Id): Promise<string[]>;
   /** Descifra y devuelve la contraseña de un acceso. */
   verClave(id: Id): Promise<string>;
 

@@ -25,13 +25,15 @@ export const TABLA: Record<NombreColeccion, string> = {
   automations: 'automations',
   automationRuns: 'automation_runs',
   outgoingEmails: 'outgoing_emails',
+  rgpdLog: 'rgpd_log',
+  integrations: 'integrations',
 };
 
 const aSnake = (k: string) => k.replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
 const aCamel = (k: string) => k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
 
 /** Columnas de la base de datos que la app aún no usa (se dejan en paz). */
-const IGNORAR = new Set(['workspace_id', 'updated_at', 'password_enc']);
+const IGNORAR = new Set(['workspace_id', 'updated_at', 'password_enc', 'token_enc']);
 /** Campos de la app que no son columnas (se guardan aparte). */
 const NO_COLUMNA = new Set(['collaborators', 'hasPassword', 'password']);
 

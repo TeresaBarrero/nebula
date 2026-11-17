@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { DISCIPLINAS } from '@/lib/catalogos/disciplinas';
 import type { Tema } from '@/lib/datos/tipos';
 import { ejemploFactura, eur } from '@/lib/reglas/dinero';
@@ -11,6 +11,7 @@ import { supabaseNavegador } from '@/lib/supabase/navegador';
 import { useCarcasa } from '@/components/app/Carcasa';
 import { EditarPerfil } from '@/components/app/EditarPerfil';
 import { AjustesCliente } from '@/components/cliente/AjustesCliente';
+import { Conexiones, TusDatos } from '@/components/app/TusDatos';
 import { useNebula } from '@/components/app/Nebula';
 import { Ayuda } from '@/components/ui/Ayuda';
 import { Cabecera } from '@/components/ui/Cabecera';
@@ -257,40 +258,10 @@ export default function PaginaPerfil() {
 
           <AjustesCliente />
 
-          <section className="card">
-            <div className="card-h">
-              <h2>
-                <Icono n="link" />
-                Próximamente
-              </h2>
-            </div>
-            <div className="pref">
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <span className="tl-ic mist">
-                  <Icono n="mail" />
-                </span>
-                <div>
-                  <b>Conexiones</b>
-                  <span>Gmail, Outlook y Google Calendar.</span>
-                </div>
-              </div>
-              <span className="pill mist">Fase 5</span>
-            </div>
-            <div className="pref">
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <span className="tl-ic mist">
-                  <Icono n="shield" />
-                </span>
-                <div>
-                  <b>
-                    Protección de datos <Ayuda k="rgpd" />
-                  </b>
-                  <span>Registro de solicitudes, exportar y borrar datos de un contacto.</span>
-                </div>
-              </div>
-              <span className="pill mist">Fase 5</span>
-            </div>
-          </section>
+          <Suspense>
+            <Conexiones />
+          </Suspense>
+          <TusDatos />
         </div>
       </div>
       {editar && <EditarPerfil alCerrar={() => setEditar(false)} />}

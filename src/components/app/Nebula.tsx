@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { borrarDemo, crearAlmacenDemo, marcarAsistenteDemo } from '@/lib/datos/almacen-demo';
 import { borrarArchivoDemo, guardarArchivoDemo, leerArchivoDemo, vaciarArchivosDemo } from '@/lib/datos/archivos-demo';
 import { CuentaNoActiva, SinSesion, crearAlmacenNube } from '@/lib/datos/almacen-nube';
+import { conCopiaLocal, vaciarCopiaLocal } from '@/lib/datos/copia-local';
 import type { Ajustes, Almacen, Cargado, DatosAsistente, Modo, Perfil, Tema } from '@/lib/datos/tipos';
 import { irpfDelPerfil } from '@/lib/reglas/irpf';
 import { enDemo, salirDeDemo } from '@/lib/demo-cookie';
@@ -47,7 +48,7 @@ export function ProveedorNebula({ children, cargando }: { children: ReactNode; c
   useEffect(() => {
     let a: Almacen;
     if (enDemo()) a = crearAlmacenDemo(localStorage, { guardar: guardarArchivoDemo, leer: leerArchivoDemo, borrar: borrarArchivoDemo });
-    else if (supabaseConfigurado) a = crearAlmacenNube(supabaseNavegador());
+    else if (supabaseConfigurado) a = conCopiaLocal(crearAlmacenNube(supabaseNavegador()));
     else {
       router.replace('/entrar');
       return;
@@ -141,7 +142,10 @@ export function ProveedorNebula({ children, cargando }: { children: ReactNode; c
       },
       salir: async () => {
         if (almacen.modo === 'demo') salirDeDemo();
-        else await supabaseNavegador().auth.signOut();
+        else {
+          await supabaseNavegador().auth.signOut();
+          await vaciarCopiaLocal(); // la copia sin conexión se borra al salir
+        }
         aplicarCompacto(false);
         router.replace('/entrar');
         router.refresh();
