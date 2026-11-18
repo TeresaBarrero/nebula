@@ -402,6 +402,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"interesados": {
+                  Row: {
+                    "comment": string,"contacted": boolean,"created_at": string,"discipline": string,"email": string,"id": string,"kind": string,"name": string,"privacy_accepted_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "comment"?: string,"contacted"?: boolean,"created_at"?: string,"discipline"?: string,"email": string,"id"?: string,"kind"?: string,"name": string,"privacy_accepted_at": string
+                  }
+                  Update: {
+                    "comment"?: string,"contacted"?: boolean,"created_at"?: string,"discipline"?: string,"email"?: string,"id"?: string,"kind"?: string,"name"?: string,"privacy_accepted_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"invoice_counters": {
                   Row: {
                     "last": number,"series": string,"workspace_id": string,"year": number

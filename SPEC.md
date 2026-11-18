@@ -594,3 +594,12 @@ nombre, cómo saludar, rol, email, teléfono, `prefs`, `status` (pendiente | apr
 `workspace_settings` es **por espacio**: estudio, datos fiscales, IVA/IRPF, tarifa, capacidad, disciplinas, cobros online, `onboarded`.
 `workspaces` + `workspace_members` (rol `owner` | `member`) y la función `is_member(workspace_id)`, que exige cuenta aprobada,
 son la base de las reglas RLS de todas las tablas futuras.
+
+### 14.5 nebúla como demo de portfolio (decidido el 18-11-2026)
+Mientras nebúla se enseña en el portfolio, **no se pueden crear cuentas** (`REGISTRO_ABIERTO = false` en `src/lib/lanzamiento.ts`).
+- `/entrar` muestra primero **«Probar la demostración»**, después **«Me interesa»** y al final «Entrar con tu cuenta» (solo para quien administra).
+- **«Me interesa»** (`/me-interesa`, también desde la barra de la demo): nombre, email, a qué se dedica, cómo trabaja (autónomo/a o agencia),
+  comentario opcional y casilla de privacidad. Se guarda en la tabla `interesados` (solo la escribe el servidor y solo la ve quien administra)
+  y llega un correo a quien administra. Lista en **Perfil → Interesados** (marcar contactado, copiar emails, descargar CSV, borrar).
+- `/registro` redirige a `/me-interesa`. Para abrir nebúla al público: poner `REGISTRO_ABIERTO = true`, cambiar la clave secreta de Supabase
+  y la contraseña de la base de datos, borrar los datos de prueba y revisar los textos legales.

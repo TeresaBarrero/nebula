@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { REGISTRO_ABIERTO } from '@/lib/lanzamiento';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { destinoDe, reloj } from '@/lib/reglas/trabajo';
 import { useTrabajo } from '@/components/trabajo/Trabajo';
@@ -65,10 +66,17 @@ export function BarraSuperior({
             <span className="demo-txt">Modo demostración</span>
             <Ayuda texto="Estás probando nebúla con datos de ejemplo. Tus cambios solo se guardan en este navegador." />
           </span>
-          <Link href="/registro?desde=demo" className="btn primary sm">
-            <Icono n="user" />
-            Crear usuario
-          </Link>
+          {REGISTRO_ABIERTO ? (
+            <Link href="/registro?desde=demo" className="btn primary sm">
+              <Icono n="user" />
+              Crear usuario
+            </Link>
+          ) : (
+            <Link href="/me-interesa?desde=demo" className="btn primary sm">
+              <Icono n="star" />
+              Me interesa
+            </Link>
+          )}
         </div>
       )}
       <BotonCronometro />

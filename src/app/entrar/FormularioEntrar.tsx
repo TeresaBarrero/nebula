@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { activarDemo, salirDeDemo } from '@/lib/demo-cookie';
+import { REGISTRO_ABIERTO } from '@/lib/lanzamiento';
 import { supabaseConfigurado } from '@/lib/supabase/config';
 import { supabaseNavegador } from '@/lib/supabase/navegador';
 import { BotonGoogle, MarcoAcceso } from '@/components/acceso/MarcoAcceso';
@@ -78,8 +79,30 @@ export function FormularioEntrar() {
 
   return (
     <MarcoAcceso>
+      <button type="button" className="card acceso-demo" onClick={demo}>
+        <span className="tl-ic butter">
+          <Icono n="eye" />
+        </span>
+        <span style={{ flex: 1, textAlign: 'left' }}>
+          <b>Probar la demostración</b>
+          <span className="muted">Sin registrarte, con datos de ejemplo. Tus cambios se guardan solo en este navegador.</span>
+        </span>
+        <Icono n="right" />
+      </button>
+      {!REGISTRO_ABIERTO && (
+        <Link href="/me-interesa" className="card acceso-demo interes">
+          <span className="tl-ic sage">
+            <Icono n="star" />
+          </span>
+          <span style={{ flex: 1, textAlign: 'left' }}>
+            <b>Me interesa</b>
+            <span className="muted">¿Te gustaría usar nebúla en tu trabajo? Apúntate y te avisamos cuando esté disponible.</span>
+          </span>
+          <Icono n="right" />
+        </Link>
+      )}
       <section className="card acceso-tarjeta">
-        <h1>Entrar</h1>
+        <h1>{REGISTRO_ABIERTO ? 'Entrar' : 'Entrar con tu cuenta'}</h1>
         {mensaje && (
           <div className={`warn ${mensaje[0]}`} role="status">
             {mensaje[1]}
@@ -107,12 +130,14 @@ export function FormularioEntrar() {
               <span>o</span>
             </div>
             <BotonGoogle onClick={google} texto="Entrar con Google" disabled={ocupado} />
-            <p className="muted centrado" style={{ margin: 0 }}>
-              ¿Aún no tienes cuenta?{' '}
-              <Link href="/registro" className="text-link">
-                Crear usuario
-              </Link>
-            </p>
+            {REGISTRO_ABIERTO && (
+              <p className="muted centrado" style={{ margin: 0 }}>
+                ¿Aún no tienes cuenta?{' '}
+                <Link href="/registro" className="text-link">
+                  Crear usuario
+                </Link>
+              </p>
+            )}
           </>
         ) : (
           <div className="warn butter">
@@ -121,16 +146,6 @@ export function FormularioEntrar() {
         )}
       </section>
 
-      <button type="button" className="card acceso-demo" onClick={demo}>
-        <span className="tl-ic butter">
-          <Icono n="eye" />
-        </span>
-        <span style={{ flex: 1, textAlign: 'left' }}>
-          <b>Probar la demostración</b>
-          <span className="muted">Sin registrarte, con datos de ejemplo. Tus cambios se guardan solo en este navegador.</span>
-        </span>
-        <Icono n="right" />
-      </button>
     </MarcoAcceso>
   );
 }

@@ -35,12 +35,17 @@ export default function PaginaPerfil() {
   const [borradorCapacidad, setBorradorCapacidad] = useState<string | null>(null);
   const capacidad = borradorCapacidad ?? String(a.capacity);
   const [pendientes, setPendientes] = useState<number | null>(null);
+  const [interesados, setInteresados] = useState<number | null>(null);
 
   useEffect(() => {
     if (!n.esAdmin) return;
     supabaseNavegador()
       .rpc('admin_list_accounts')
       .then(({ data }) => setPendientes((data ?? []).filter((c) => c.status === 'pendiente').length));
+    supabaseNavegador()
+      .from('interesados')
+      .select('id', { count: 'exact', head: true })
+      .then(({ count }) => setInteresados(count ?? 0));
   }, [n.esAdmin]);
 
   const irpf = irpfPorDefecto(a);
@@ -111,6 +116,27 @@ export default function PaginaPerfil() {
                   : pendientes
                     ? `${pendientes} ${pendientes === 1 ? 'persona espera' : 'personas esperan'} tu aprobación para usar nebúla.`
                     : 'No hay nadie esperando aprobación.'}
+              </div>
+            </section>
+          )}
+
+          {n.esAdmin && (
+            <section className="card">
+              <div className="card-h">
+                <h2>
+                  <Icono n="star" />
+                  Interesados
+                </h2>
+                <Link href="/perfil/interesados" className="text-link">
+                  Ver la lista
+                </Link>
+              </div>
+              <div className={`warn ${interesados ? 'sage' : 'butter'}`}>
+                {interesados === null
+                  ? 'Comprobando…'
+                  : interesados
+                    ? `${interesados} ${interesados === 1 ? 'persona se ha apuntado' : 'personas se han apuntado'} para usar nebúla cuando esté disponible.`
+                    : 'Todavía no se ha apuntado nadie desde «Me interesa».'}
               </div>
             </section>
           )}

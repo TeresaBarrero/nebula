@@ -3,6 +3,7 @@
 import { headers } from 'next/headers';
 import { limpiarDatosAsistente } from '@/lib/datos/asistente';
 import { validarRegistro, type ErroresRegistro } from '@/lib/reglas/registro';
+import { REGISTRO_ABIERTO } from '@/lib/lanzamiento';
 import { SITIO_URL, supabaseConfigurado } from '@/lib/supabase/config';
 import { supabaseServidor } from '@/lib/supabase/servidor';
 
@@ -10,7 +11,7 @@ export type ResultadoRegistro = { ok: boolean; errores: ErroresRegistro; email?:
 
 /** Crea la cuenta en Supabase. Queda pendiente de confirmar el email y de tu aprobación. */
 export async function registrar(_previo: ResultadoRegistro, f: FormData): Promise<ResultadoRegistro> {
-  if (!supabaseConfigurado) return { ok: false, errores: { general: 'El registro todavía no está disponible.' } };
+  if (!supabaseConfigurado || !REGISTRO_ABIERTO) return { ok: false, errores: { general: 'El registro todavía no está disponible.' } };
 
   const datos = {
     fullName: String(f.get('fullName') ?? '').trim(),
