@@ -24,6 +24,7 @@ export function Conexiones() {
   useEffect(() => {
     if (resultado === 'ok') toast('Google Calendar conectado y sincronizado');
     if (resultado === 'error') toast('No se ha podido conectar con Google. Inténtalo de nuevo.');
+    if (resultado === 'sin-permiso') toast('Falta el permiso del calendario: vuelve a conectar y, en la pantalla de Google, marca la casilla del calendario.');
     if (resultado === 'sin-configurar') toast('Falta configurar la conexión con Google en el servidor (ver instrucciones).');
   }, [resultado, toast]);
 

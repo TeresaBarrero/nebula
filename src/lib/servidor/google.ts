@@ -34,19 +34,21 @@ export function urlAutorizacion(origen: string, ws: Id): string {
 }
 
 /** Cambia el código de Google por el permiso duradero (refresh token) y el email de la cuenta. */
-export async function canjearCodigo(codigo: string, origen: string): Promise<{ refresh: string; email: string } | null> {
+export async function canjearCodigo(codigo: string, origen: string): Promise<{ refresh: string; email: string; calendario: boolean } | null> {
   const r = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ code: codigo, client_id: process.env.GOOGLE_CLIENT_ID!, client_secret: process.env.GOOGLE_CLIENT_SECRET!, redirect_uri: `${origen}/api/google/callback`, grant_type: 'authorization_code' }),
   });
-  const j = (await r.json().catch(() => null)) as { refresh_token?: string; id_token?: string } | null;
+  const j = (await r.json().catch(() => null)) as { refresh_token?: string; id_token?: string; scope?: string } | null;
   if (!r.ok || !j?.refresh_token) return null;
+  // Google deja desmarcar el permiso del calendario en su pantalla: sin él no se puede sincronizar.
+  const calendario = (j.scope ?? '').split(' ').includes('https://www.googleapis.com/auth/calendar.events');
   let email = '';
   try {
     email = JSON.parse(Buffer.from((j.id_token ?? '').split('.')[1] ?? '', 'base64url').toString()).email ?? '';
   } catch {}
-  return { refresh: j.refresh_token, email };
+  return { refresh: j.refresh_token, email, calendario };
 }
 
 async function accesoTemporal(refresh: string): Promise<string | null> {

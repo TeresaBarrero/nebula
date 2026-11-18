@@ -11,6 +11,7 @@ export async function GET(req: Request) {
   if (!ws || !sesion || sesion.ws !== ws || !sb || u.searchParams.get('error')) return Response.redirect(`${origen}/perfil?google=error`, 303);
   const r = await canjearCodigo(u.searchParams.get('code') ?? '', origen);
   if (!r) return Response.redirect(`${origen}/perfil?google=error`, 303);
+  if (!r.calendario) return Response.redirect(`${origen}/perfil?google=sin-permiso`, 303);
   const { error } = await sb.rpc('guardar_integracion', { p_ws: ws, p_provider: 'gcal', p_email: r.email, p_token: r.refresh });
   if (error) return Response.redirect(`${origen}/perfil?google=error`, 303);
   await sincronizar(sb, ws);
