@@ -76,6 +76,12 @@ export function Conexiones() {
               <Icono n="repeat" />
               {ocupado ? 'Sincronizando…' : 'Sincronizar ahora'}
             </button>
+            {modo !== 'demo' && (
+              <button type="button" className={`btn sm${g.lastError ? ' primary' : ' ghost'}`} onClick={() => void conectar()}>
+                <Icono n="link" />
+                Volver a conectar
+              </button>
+            )}
             <button type="button" className="btn sm ghost" onClick={() => void borrar('integrations', g.id, 'Google Calendar desconectado')}>
               Desconectar
             </button>
