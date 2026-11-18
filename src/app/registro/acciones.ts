@@ -3,7 +3,7 @@
 import { headers } from 'next/headers';
 import { limpiarDatosAsistente } from '@/lib/datos/asistente';
 import { validarRegistro, type ErroresRegistro } from '@/lib/reglas/registro';
-import { supabaseConfigurado } from '@/lib/supabase/config';
+import { SITIO_URL, supabaseConfigurado } from '@/lib/supabase/config';
 import { supabaseServidor } from '@/lib/supabase/servidor';
 
 export type ResultadoRegistro = { ok: boolean; errores: ErroresRegistro; email?: string };
@@ -29,7 +29,7 @@ export async function registrar(_previo: ResultadoRegistro, f: FormData): Promis
   } catch {}
 
   const h = await headers();
-  const origen = process.env.NEXT_PUBLIC_SITE_URL || h.get('origin') || `https://${h.get('host')}`;
+  const origen = SITIO_URL || h.get('origin') || `https://${h.get('host')}`;
 
   const supabase = await supabaseServidor();
   const { error } = await supabase.auth.signUp({

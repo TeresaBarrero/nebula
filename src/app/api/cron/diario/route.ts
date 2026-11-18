@@ -1,6 +1,7 @@
 import { tareasDiarias } from '@/lib/automatizaciones';
 import { sincronizar } from '@/lib/servidor/google';
 import { cargarEspacio, contextoServidor, ejecutorServidor, json, servicio } from '@/lib/servidor/espacio';
+import { SITIO_URL } from '@/lib/supabase/config';
 
 /**
  * Tarea de cada mañana (Vercel Cron, ver vercel.json): recordatorios de pago, toques por entregables
@@ -11,7 +12,7 @@ export async function GET(req: Request) {
   if (!secreto || req.headers.get('authorization') !== `Bearer ${secreto}`) return json({ error: 'No autorizado' }, 401);
   const sb = servicio();
   if (!sb) return json({ error: 'No configurado' }, 503);
-  const origen = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
+  const origen = SITIO_URL || new URL(req.url).origin;
   const { data: espacios } = await sb.from('workspaces').select('id');
   const resumen: Record<string, unknown> = {};
   for (const { id } of espacios ?? []) {

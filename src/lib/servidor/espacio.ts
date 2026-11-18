@@ -7,7 +7,7 @@ import { TABLA, aFila, deFila } from '@/lib/datos/mapeo';
 import { ajustesDesdeFila } from '@/lib/datos/almacen-nube';
 import { AJUSTES_POR_DEFECTO, type Ajustes } from '@/lib/datos/tipos';
 import { caducidadEnlace, hoyMadrid } from '@/lib/reglas/cliente';
-import { SUPABASE_URL } from '@/lib/supabase/config';
+import { SITIO_URL, SUPABASE_URL } from '@/lib/supabase/config';
 
 /**
  * Conexión de servicio (salta las reglas RLS): SOLO en el servidor y SIEMPRE filtrando por el espacio.
@@ -20,7 +20,7 @@ export function servicio(): SupabaseClient | null {
 }
 
 export const huellaHex = (s: string) => createHash('sha256').update(s).digest('hex');
-export const origenDe = (req: Request) => process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
+export const origenDe = (req: Request) => SITIO_URL || new URL(req.url).origin;
 export const ipDe = (req: Request) => (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || req.headers.get('x-real-ip') || 'desconocida';
 
 /** Todos los datos de un espacio (para las automatizaciones y el portal). Las contraseñas de accesos no se cargan. */

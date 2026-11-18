@@ -12,3 +12,10 @@ export const supabaseConfigurado = Boolean(SUPABASE_URL && SUPABASE_KEY);
 
 /** Cookie que indica que se está usando el modo demostración. */
 export const COOKIE_DEMO = 'nebula_demo';
+
+/**
+ * Dirección pública de nebúla (para enlaces en correos, portal, Google…). No es secreta.
+ * En la web publicada se usa la de Vercel; en el ordenador, la del propio navegador.
+ */
+export const SITIO_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_ENV === 'production' ? 'https://nebulacrm-app.vercel.app' : '');
