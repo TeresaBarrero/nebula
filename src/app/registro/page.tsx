@@ -6,9 +6,9 @@ import { FormularioRegistro } from './FormularioRegistro';
 
 export const metadata: Metadata = { title: 'Crear usuario' };
 
-export default async function Registro({ searchParams }: { searchParams: Promise<{ desde?: string }> }) {
+export default function Registro() {
   // Mientras nebúla es una demo de portfolio no se crean cuentas: se apunta a la lista de interesados.
-  if (!REGISTRO_ABIERTO) redirect((await searchParams).desde === 'demo' ? '/me-interesa?desde=demo' : '/me-interesa');
+  if (!REGISTRO_ABIERTO) redirect('/me-interesa');
   return (
     <Suspense>
       <FormularioRegistro />
