@@ -76,6 +76,18 @@ function fechaHora(g: EventoGoogle): { date: string; time: string } | null {
   return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
 }
 
+/** Explica en lenguaje llano por qué Google no deja leer el calendario (sin datos personales). */
+async function motivoFallo(r: Response): Promise<string> {
+  const j = (await r.json().catch(() => null)) as { error?: { message?: string; errors?: { reason?: string }[]; details?: { reason?: string }[] } } | null;
+  const motivos = [...(j?.error?.errors ?? []), ...(j?.error?.details ?? [])].map((e) => e.reason ?? '');
+  const texto = j?.error?.message ?? '';
+  if (motivos.some((m) => m === 'accessNotConfigured' || m === 'SERVICE_DISABLED') || /has not been used|is disabled/i.test(texto))
+    return 'La API de Google Calendar no está activada en tu proyecto de Google Cloud. Actívala y vuelve a sincronizar.';
+  if (r.status === 403 && motivos.some((m) => /insufficient/i.test(m) || m === 'ACCESS_TOKEN_SCOPE_INSUFFICIENT'))
+    return 'Al conectar no marcaste el permiso para ver y editar tu calendario. Vuelve a conectar y marca esa casilla.';
+  return `No se ha podido leer tu Google Calendar (Google responde ${r.status}${motivos[0] ? `: ${motivos[0]}` : ''}).`;
+}
+
 /**
  * Sincroniza en los dos sentidos (de 7 días atrás a 60 días adelante):
  * · nebúla → Google: reuniones creadas en nebúla (se crean o se actualizan).
@@ -108,7 +120,7 @@ export async function sincronizar(sb: SupabaseClient, ws: Id): Promise<{ ok: boo
   }
   const q = new URLSearchParams({ timeMin: `${desde}T00:00:00Z`, timeMax: `${sumarDias(hoy, 61)}T00:00:00Z`, singleEvents: 'true', showDeleted: 'true', maxResults: '250' });
   const r = await api(`/events?${q}`);
-  if (!r.ok) return fallo('No se ha podido leer tu Google Calendar.');
+  if (!r.ok) return fallo(await motivoFallo(r));
   const items = ((await r.json()) as { items?: EventoGoogle[] }).items ?? [];
   const deGoogle = new Map((propias ?? []).filter((x) => x.google_event_id).map((x) => [x.google_event_id as string, x]));
   for (const g of items) {
