@@ -70,17 +70,32 @@ a.acceso-demo { text-decoration: none; }
 .separador::before, .separador::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .btn-google { width: 100%; justify-content: center; padding-block: 11px; }
 
+/* Tareas: índice de cuadros bajo la cabecera (salta a cada cuadro) */
+.indice-cuadros { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.indice-cuadros .pill { padding: 6px 12px; font-size: 12.5px; text-decoration: none; gap: 8px; }
+.indice-cuadros .pill .num { opacity: .75; }
+.indice-cuadros .pill:hover { filter: brightness(.97); }
+.indice-cuadros .pill:focus-visible { outline: 2px solid var(--sage-strong); outline-offset: 2px; }
+.quad { scroll-margin-top: 16px; }
+.content { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { .content { scroll-behavior: auto; } }
+
 /* Solicitudes de acceso */
 .solicitud { flex-wrap: wrap; }
 
 @media (max-width: 860px) {
   .demo-txt { display: none; }
   .demo-pill .help { margin-left: 0; }
+  /* La burbuja del aviso de demo se ancla a la barra entera para no salirse de la pantalla. */
+  .top { position: relative; }
+  .demo-pill .help { position: static; }
+  .demo-pill .help .tip { left: 12px; right: 12px; top: calc(100% - 6px); width: auto; max-width: none; }
 }
 @media (max-width: 520px) {
   .wz-2 { grid-template-columns: 1fr; }
   .search-trigger span { display: none; }
-  .search-trigger { flex: 0 0 auto; }
+  /* En móvil el buscador es un botón cuadrado con la lupa centrada. */
+  .top .search-trigger { flex: none; width: 40px; height: 40px; padding: 0; justify-content: center; }
   .demo-bar .btn { padding: 6px 10px; }
   .acceso-tarjeta { padding: 20px; }
 }

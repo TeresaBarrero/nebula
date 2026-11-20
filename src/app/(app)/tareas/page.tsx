@@ -72,6 +72,15 @@ export default function Tareas() {
         Arrastra una tarea a otro cuadro para cambiar su prioridad, o ábrela y marca «Urgente» o «Importante».
       </Cabecera>
 
+      <nav className="indice-cuadros" aria-label="Ir a un cuadro de prioridad">
+        {CUADROS.map((q) => (
+          <a key={q} href={`#cuadro-${q}`} className={`pill ${CUADRANTES[q].cls}`}>
+            {CUADRANTES[q].label}
+            <span className="num">{abiertas.filter((t) => cuadranteDe(t) === q).length}</span>
+          </a>
+        ))}
+      </nav>
+
       <div className="matrix">
         {CUADROS.map((q) => {
           const lista = abiertas.filter((t) => cuadranteDe(t) === q);
@@ -79,6 +88,7 @@ export default function Tareas() {
           return (
             <section
               key={q}
+              id={`cuadro-${q}`}
               className={`quad ${Q.cls} ${encima === q ? 'over' : ''}`}
               aria-label={Q.label}
               onDragOver={(e) => {
