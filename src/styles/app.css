@@ -76,6 +76,14 @@ a.acceso-demo { text-decoration: none; }
 .indice-cuadros .pill .num { opacity: .75; }
 .indice-cuadros .pill:hover { filter: brightness(.97); }
 .indice-cuadros .pill:focus-visible { outline: 2px solid var(--sage-strong); outline-offset: 2px; }
+.indice-cuadros .corto { display: none; }
+@media (max-width: 520px) {
+  .indice-cuadros { flex-wrap: nowrap; gap: 5px; overflow-x: auto; scrollbar-width: none; }
+  .indice-cuadros::-webkit-scrollbar { display: none; }
+  .indice-cuadros .pill { flex: 1 0 auto; justify-content: center; padding: 6px 8px; font-size: 11.5px; gap: 5px; }
+  .indice-cuadros .largo { display: none; }
+  .indice-cuadros .corto { display: inline; }
+}
 .quad { scroll-margin-top: 16px; }
 .content { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { .content { scroll-behavior: auto; } }

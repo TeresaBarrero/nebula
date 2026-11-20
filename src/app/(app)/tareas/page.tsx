@@ -13,7 +13,9 @@ import { Icono } from '@/components/ui/Icono';
 import { useToast } from '@/components/ui/Toasts';
 
 const CUADROS = Object.keys(CUADRANTES) as Cuadrante[];
-const banderas = (q: Cuadrante) => ({ urgent: q === 'q1' || q === 'q3', important: q === 'q1' || q === 'q2' });
+/** Nombres cortos del índice para que quepa en una línea en el móvil. */
+const CORTOS: Record<Cuadrante, string> = { q1: 'Urg. e imp.', q2: 'Imp.', q3: 'Urg.', q4: 'Ni una ni otra' };
+const banderas =(q: Cuadrante) => ({ urgent: q === 'q1' || q === 'q3', important: q === 'q1' || q === 'q2' });
 
 /** Tareas: matriz urgente / importante con arrastrar y soltar (SPEC §6.7). */
 export default function Tareas() {
@@ -73,12 +75,16 @@ export default function Tareas() {
       </Cabecera>
 
       <nav className="indice-cuadros" aria-label="Ir a un cuadro de prioridad">
-        {CUADROS.map((q) => (
-          <a key={q} href={`#cuadro-${q}`} className={`pill ${CUADRANTES[q].cls}`}>
-            {CUADRANTES[q].label}
-            <span className="num">{abiertas.filter((t) => cuadranteDe(t) === q).length}</span>
-          </a>
-        ))}
+        {CUADROS.map((q) => {
+          const n = abiertas.filter((t) => cuadranteDe(t) === q).length;
+          return (
+            <a key={q} href={`#cuadro-${q}`} className={`pill ${CUADRANTES[q].cls}`} aria-label={`${CUADRANTES[q].label}: ${n}`} title={CUADRANTES[q].label}>
+              <span className="largo" aria-hidden="true">{CUADRANTES[q].label}</span>
+              <span className="corto" aria-hidden="true">{CORTOS[q]}</span>
+              <span className="num" aria-hidden="true">{n}</span>
+            </a>
+          );
+        })}
       </nav>
 
       <div className="matrix">
